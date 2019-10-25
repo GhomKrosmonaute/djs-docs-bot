@@ -13,9 +13,9 @@ const types = [
     "method",
     "event"
 ]
-const support = "https://discord.gg/JCdt7EZ"
+const support = "https://discord.gg/3vC2XWK"
 var doc;
-var deprecated, github, npm, yay;
+var deprecated, github, npm, yay, labs;
 var currentDocName = "stable"
 
 client.login(data.private.token)
@@ -23,6 +23,7 @@ client.login(data.private.token)
 client.on("error", err => console.log("=> "+err.message.toUpperCase()));
 
 client.on("ready", async function() {
+    labs = client.guilds.get("507389389098188820")
 	deprecated = client.emojis.get("605323302059376670")
 	github = client.emojis.get("605387724534317156")
 	npm = client.emojis.get("605387724102565890")
@@ -132,7 +133,7 @@ client.on("message", async function(message) {
         }).catch(error => sendError(error, message.channel))
         embed = new Discord.RichEmbed()
             .setColor("#F2D553")
-            .setFooter(`Date of publication of the file`, "https://cdn.discordapp.com/attachments/554206505897951252/554641183066947591/logo_v1.png")
+            .setFooter(`Date of publication of the file`, labs.iconURL)
             .setTimestamp()
         message.channel.send(embed).catch(error => sendError(error, message.channel))
     }
