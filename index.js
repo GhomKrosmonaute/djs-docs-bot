@@ -133,7 +133,7 @@ client.on("message", async function(message) {
         }).catch(error => sendError(error, message.channel))
         embed = new Discord.RichEmbed()
             .setColor("#F2D553")
-            .setFooter(`Date of publication of the file`, labs.iconURL)
+            .setFooter(`Date of publication of the file`, labs.iconURL.replace(/\.(?:png|jpg|jpeg)/i,'.gif'))
             .setTimestamp()
         message.channel.send(embed).catch(error => sendError(error, message.channel))
     }
@@ -169,14 +169,8 @@ function sendError(error, channel) {
     channel.send(embed).catch(console.error)
 }
 
-function isCommand(texte) {
-    let Texte = texte.slice(0)
-    let count = 0
-    while (Texte.includes("*")) {
-        Texte = Texte.replace("*", "")
-        count++
-    }
-    return count < 2
+function isCommand(text) {
+    return /^\*[^*]*$/.test(text)
 }
 
 function toLib(doc){
