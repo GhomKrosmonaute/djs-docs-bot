@@ -3,7 +3,8 @@ const fs = require('fs')
 const Doc = require('discord.js-docs')
 const Discord = require('discord.js')
 const client = new Discord.Client()
-const data = JSON.parse(fs.readFileSync(__dirname + "/data.json", { encoding: "utf8" }))
+const data = require('./data.json')
+const {token} = require('./private.json')
 const prefix = "*"
 const types = [
     "class",
@@ -18,7 +19,7 @@ var doc;
 var deprecated, github, npm, yay, labs;
 var currentDocName = "stable"
 
-client.login(data.private.token)
+client.login(token)
 
 client.on("error", err => console.log("=> "+err.message.toUpperCase()));
 
@@ -174,7 +175,6 @@ function isCommand(text) {
 }
 
 function toLib(doc){
-    console.log(doc.repo)
     return data.libraries.find(lib=>lib.repo==(doc.repo||doc.doc.repo))
 }
 
