@@ -174,6 +174,7 @@ function isCommand(text) {
 }
 
 function toLib(doc){
+    console.log(doc.repo)
     return data.libraries.find(lib=>lib.repo==(doc.repo||doc.doc.repo))
 }
 
