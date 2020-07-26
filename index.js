@@ -225,9 +225,8 @@ function embedDoc(doc) {
     	description.push(normalize(doc.description))
     }
     if (doc.construct) {
-    	description.push("```js\n"+
-    		`const ${doc.construct.name.toLowerCase()} = new ${doc.construct.name}(\n\t${doc.construct.params.map(param=>param.name).join(",\n\t")}\n);\n`+
-    		`\n${doc.construct.params.map(param=>`// ${param.optional ? "[" : ""}${param.name}${param.optional ? "]" : ""} : ${param.type.join(" ")}`).join("\n")}`+
+    	description.push("```ts\n"+
+    		`class ${doc.construct.name}{\n\tconstructor(\n${doc.construct.params.map(param=>`\t\t${param.name}${param.optional ? "?" : ""}: ${param.type.join(" ")}`).join(",\n")}\n\t)\n}`+
     	"\n```")
     }
     if (doc.returns) {
