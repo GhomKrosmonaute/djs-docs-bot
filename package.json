@@ -1,0 +1,27 @@
+{
+  "name": "djs-doc-bot",
+  "version": "1.0.0",
+  "description": "This bot is a direct link between the discord.js documentation and the Discord application.",
+  "main": "index.js",
+  "scripts": {
+    "docs": "docgen --source src --custom docs/index.yml --output docs/docs.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CamilleAbella/djs-doc-bot.git"
+  },
+  "keywords": [],
+  "author": "ghom",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CamilleAbella/djs-doc-bot/issues"
+  },
+  "homepage": "https://github.com/CamilleAbella/djs-doc-bot#readme",
+  "dependencies": {
+    "discord.js": "^12.5.0",
+    "docgen": "0.0.1"
+  },
+  "devDependencies": {
+    "prettier": "^2.2.0"
+  }
+}
