@@ -7,7 +7,7 @@ exec(
     if (error) {
       console.error("docs already cloned")
       console.log("fetch docs by pull")
-      exec("git pull origin docs", { cwd: "docs" }, (error) => {
+      exec("git reset --hard && git pull origin docs", { cwd: "docs" }, (error) => {
         if (error) {
           throw error
         } else {
