@@ -5,7 +5,8 @@
   "main": "app.js",
   "type": "module",
   "scripts": {
-    "prettier": "prettier --write app.js src"
+    "prettier": "prettier --write app.js src",
+    "fetch": "node src/scripts/fetch.js"
   },
   "repository": {
     "type": "git",
@@ -24,11 +25,12 @@
   "dependencies": {
     "axios": "^0.21.0",
     "discord.js": "^12.5.0",
-    "docgen": "0.0.1",
+    "dotenv": "^8.2.0",
     "enmap": "^5.8.2"
   },
   "devDependencies": {
     "@types/axios": "^0.14.0",
+    "@types/node": "^14.14.9",
     "prettier": "^2.2.0"
   }
 }
