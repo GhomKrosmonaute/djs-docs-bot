@@ -1,5 +1,5 @@
-import dotenv from "dotenv"
-import discord from "discord.js"
+const dotenv = require("dotenv")
+const discord = require("discord.js")
 
 dotenv.config()
 

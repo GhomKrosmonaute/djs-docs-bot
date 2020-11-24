@@ -1,0 +1,16 @@
+{
+  "documentations": [
+    {
+      "name": "discord.js",
+      "repository": "https://github.com/discordjs/discord.js.git",
+      "branch": "docs",
+      "aliases": ["djs", "discordjs", "discord js", "discord-js"]
+    },
+    {
+      "name": "discord-akairo",
+      "repository": "https://github.com/discord-akairo/discord-akairo.git",
+      "branch": "docs",
+      "aliases": ["da", "akairo", "discord akairo"]
+    }
+  ]
+}
