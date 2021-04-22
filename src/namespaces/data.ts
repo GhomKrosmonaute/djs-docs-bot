@@ -1,3 +1,5 @@
+export interface Doc {}
+
 export interface Lib {
   color: string
   repo: string
@@ -6,10 +8,27 @@ export interface Lib {
   github: string
   npm: string
   docs: string
-  versions: string[]
+  versions: { [k: string]: Doc | null }
 }
 
-export const data: Lib[] = [
+export type Type =
+  | "class"
+  | "interface"
+  | "typedef"
+  | "prop"
+  | "method"
+  | "event"
+
+export const types: Type[] = [
+  "class",
+  "interface",
+  "typedef",
+  "prop",
+  "method",
+  "event",
+]
+
+export const libs: Lib[] = [
   {
     color: "#096beb",
     repo: "discord.js",
@@ -18,7 +37,10 @@ export const data: Lib[] = [
     github: "https://github.com/discordjs/discord.js",
     npm: "https://www.npmjs.com/package/discord.js",
     docs: "https://discord.js.org/#/docs/main/stable/general/welcome",
-    versions: ["stable", "master"],
+    versions: {
+      stable: null,
+      master: null,
+    },
   },
   {
     color: "#707b8a",
@@ -28,7 +50,9 @@ export const data: Lib[] = [
     github: "https://github.com/discordjs/Commando",
     npm: "https://www.npmjs.com/package/discord.js-commando",
     docs: "https://discord.js.org/#/docs/commando/master/general/welcome",
-    versions: ["commando"],
+    versions: {
+      commando: null,
+    },
   },
   {
     color: "#707b8a",
@@ -38,7 +62,9 @@ export const data: Lib[] = [
     github: "https://github.com/discordjs/RPC",
     npm: "https://www.npmjs.com/package/discord-rpc",
     docs: "https://discord.js.org/#/docs/rpc/master/general/welcome",
-    versions: ["rpc"],
+    versions: {
+      rpc: null,
+    },
   },
   {
     color: "#87202F",
@@ -48,7 +74,10 @@ export const data: Lib[] = [
     github: "https://github.com/discord-akairo/discord-akairo",
     npm: "https://www.npmjs.com/package/discord-akairo",
     docs:
-      "https://discord-akairo.github.io/#/docs/main/stable/class/AkairoClient",
-    versions: ["akairo", "akairo-master"],
+      "https://discord-akairo.github.io/#/docs/main/master/class/AkairoClient",
+    versions: {
+      akairo: null,
+      "akairo-master": null,
+    },
   },
 ]
