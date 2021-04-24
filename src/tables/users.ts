@@ -1,10 +1,11 @@
 import * as app from "../app"
+import * as docs from "ghom-djs-docs"
 
 const table = new app.Table<{
   id: string
-  version: string
+  version: docs.SourceName
 }>({
-  name: "user",
+  name: "users",
   setup: (table) => {
     table.string("id", 64).unique()
     table.string("version", 64)
