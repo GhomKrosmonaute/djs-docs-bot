@@ -4,8 +4,8 @@ import * as docs from "ghom-djs-docs"
 import users from "../tables/users"
 
 const command: app.Command = {
-  name: "version",
-  aliases: ["versions", "v"],
+  name: "source",
+  aliases: ["versions", "version", "src", "v"],
   description: "Manage versions",
   async run(message) {
     const prefix = await app.prefix(message.guild ?? undefined)
@@ -26,7 +26,9 @@ const command: app.Command = {
                 lang: "yml",
                 content: app.libs
                   .map((lib) => {
-                    return `${lib.displayName}:\n  ${lib.versions.join("\n  ")}`
+                    return `${lib.displayName}:\n  ${lib.sourceNames.join(
+                      "\n  "
+                    )}`
                   })
                   .join("\n\n"),
               })
@@ -39,19 +41,19 @@ const command: app.Command = {
       description: "Set default version",
       positional: [
         {
-          name: "version",
+          name: "sourceName",
           description: "Your new default version",
           checkValue: (value) => docs.sources.hasOwnProperty(value),
           required: true,
         },
       ],
       async run(message) {
-        const lib = app.lib(message.args.version)
+        const lib = app.getLib(message.args.sourceName)
 
         await users.query
           .insert({
             id: message.author.id,
-            version: message.args.version,
+            sourceName: message.args.sourceName,
           })
           .onConflict("id")
           .merge()

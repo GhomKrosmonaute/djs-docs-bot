@@ -21,13 +21,12 @@ const command: app.Command = {
   ],
   async run(message) {
     const data = await users.query
-      .select("version")
+      .select("sourceName")
       .where("id", message.author.id)
       .first()
 
-    const version: docs.SourceName = data?.version ?? "master"
-    const raw = docs.cache.get(version) as docs.Raw
-    const result = docs.search(raw, message.args.path)
+    const sourceName: docs.SourceName = data?.sourceName ?? "stable"
+    const result = await docs.search(sourceName, message.args.path)
 
     if (message.args.raw)
       return message.channel.send(
@@ -37,7 +36,7 @@ const command: app.Command = {
         })
       )
 
-    return message.channel.send(app.docEmbed(raw, result))
+    return message.channel.send(app.docEmbed(sourceName, result))
   },
 }
 

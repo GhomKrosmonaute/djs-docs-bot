@@ -30,7 +30,7 @@
     "discord.js": "^12.5.0",
     "dotenv": "^8.2.0",
     "figlet": "^1.5.0",
-    "ghom-djs-docs": "^1.0.1",
+    "ghom-djs-docs": "^1.0.4",
     "ghom-eval": "^1.0.2",
     "ghom-prettify": "^2.0.1",
     "knex": "^0.95.1",

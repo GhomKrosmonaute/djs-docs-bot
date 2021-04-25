@@ -3,12 +3,12 @@ import * as docs from "ghom-djs-docs"
 
 const table = new app.Table<{
   id: string
-  version: docs.SourceName
+  sourceName: docs.SourceName
 }>({
   name: "users",
   setup: (table) => {
     table.string("id", 64).unique()
-    table.string("version", 64)
+    table.string("sourceName", 64)
   },
 })
 
