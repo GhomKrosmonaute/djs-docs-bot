@@ -1,5 +1,8 @@
 import * as app from "../app"
 import yargsParser from "yargs-parser"
+import users from "../tables/users"
+import * as docs from "ghom-djs-docs"
+import * as core from "../app/core"
 
 const listener: app.Listener<"message"> = {
   event: "message",
@@ -26,7 +29,17 @@ const listener: app.Listener<"message"> = {
 
     let cmd: app.Command = app.commands.resolve(key) as app.Command
 
-    if (!cmd) return null
+    if (!cmd) {
+      const data = await users.query
+        .select("sourceName")
+        .where("id", message.author.id)
+        .first()
+
+      const sourceName: docs.SourceName = data?.sourceName ?? "stable"
+      const result = await docs.search(sourceName, message.content)
+
+      return await message.channel.send(app.docEmbed(sourceName, result))
+    }
 
     // check sub commands
     {
