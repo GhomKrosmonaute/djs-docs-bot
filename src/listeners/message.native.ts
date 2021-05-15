@@ -1,28 +1,37 @@
 import * as app from "../app"
 import yargsParser from "yargs-parser"
-import users from "../tables/users"
-import * as docs from "ghom-djs-docs"
-import * as core from "../app/core"
 
 const listener: app.Listener<"message"> = {
   event: "message",
   async run(message) {
     if (!app.isCommandMessage(message)) return
 
-    const prefix = await app.prefix(message.guild ?? undefined)
+    app.emitMessage(message.channel, message)
+    app.emitMessage(message.author, message)
 
-    const cut = function (key: string) {
-      message.content = message.content.slice(key.length).trim()
+    if (app.isGuildMessage(message)) {
+      app.emitMessage(message.guild, message)
+      app.emitMessage(message.member, message)
     }
 
-    const mentionRegex = new RegExp(`^<@!?${message.client.user?.id}> `)
+    const prefix = await app.prefix(message.guild ?? undefined)
 
-    if (message.content.startsWith(prefix)) cut(prefix)
-    else if (mentionRegex.test(message.content))
-      cut(message.content.split(" ")[0])
+    let dynamicContent = message.content
+
+    const cut = function (key: string) {
+      dynamicContent = dynamicContent.slice(key.length).trim()
+    }
+
+    const mentionRegex = new RegExp(`^<@!?${message.client.user?.id}> ?`)
+
+    if (dynamicContent.startsWith(prefix)) message.usedPrefix = prefix
+    else if (mentionRegex.test(dynamicContent))
+      message.usedPrefix = dynamicContent.split(" ")[0]
     else return
 
-    let key = message.content.split(/\s+/)[0]
+    cut(message.usedPrefix)
+
+    let key = dynamicContent.split(/\s+/)[0]
 
     // turn ON/OFF
     if (key !== "turn" && !app.cache.ensure<boolean>("turn", true)) return
@@ -30,15 +39,9 @@ const listener: app.Listener<"message"> = {
     let cmd: app.Command = app.commands.resolve(key) as app.Command
 
     if (!cmd) {
-      const data = await users.query
-        .select("sourceName")
-        .where("id", message.author.id)
-        .first()
-
-      const sourceName: docs.SourceName = data?.sourceName ?? "stable"
-      const result = await docs.search(sourceName, message.content)
-
-      return await message.channel.send(app.docEmbed(sourceName, result))
+      if (app.defaultCommand) {
+        cmd = app.defaultCommand
+      } else return null
     }
 
     // check sub commands
@@ -47,7 +50,7 @@ const listener: app.Listener<"message"> = {
       let depth = 0
 
       while (cmd.subs && cursor < cmd.subs.length) {
-        const subKey = message.content.split(/\s+/)[depth + 1]
+        const subKey = dynamicContent.split(/\s+/)[depth + 1]
 
         for (const sub of cmd.subs) {
           if (sub.name === subKey) {
@@ -73,8 +76,10 @@ const listener: app.Listener<"message"> = {
 
     cut(key)
 
+    const baseContent = dynamicContent
+
     // parse CommandMessage arguments
-    const parsedArgs = yargsParser(message.content)
+    const parsedArgs = yargsParser(dynamicContent)
     const restPositional = parsedArgs._ ?? []
 
     message.args = (parsedArgs._?.slice(0) ?? []).map((positional) => {
@@ -388,6 +393,8 @@ const listener: app.Listener<"message"> = {
 
     if (cmd.rest) {
       const rest = await app.scrap(cmd.rest, message)
+
+      if (rest.all) message.rest = baseContent
 
       if (message.rest.length === 0) {
         if (await app.scrap(rest.required, message)) {

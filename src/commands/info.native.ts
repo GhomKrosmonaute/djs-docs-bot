@@ -12,7 +12,6 @@ const command: app.Command = {
     return message.channel.send(
       new app.MessageEmbed()
         .setColor("BLURPLE")
-        .setURL("https://discordbots.org/bot/554108430298775564")
         .setAuthor(
           `Information about ${message.client.user?.tag ?? conf.name}`,
           message.client.user?.displayAvatarURL({ dynamic: true })

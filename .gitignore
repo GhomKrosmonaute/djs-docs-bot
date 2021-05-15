@@ -1,7 +1,9 @@
 node_modules
+/git
 .env
 .npm
 dist
+temp
 /data
 .idea
 .vscode
