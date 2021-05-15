@@ -7,10 +7,11 @@ import * as core from "../app/core"
 const command: app.Command = {
   name: "search",
   description: "Search object in documentation",
+  isDefault: true,
   rest: {
     name: "path",
     description: "The documentation path",
-    default: "welcome",
+    required: true,
   },
   flags: [
     {
@@ -32,7 +33,7 @@ const command: app.Command = {
       return message.channel.send(
         core.code.stringify({
           lang: "json",
-          content: JSON.stringify(result, null, 2).slice(0, 2000),
+          content: JSON.stringify(result, null, 2).slice(0, 1500),
         })
       )
 
