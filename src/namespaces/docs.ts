@@ -89,37 +89,42 @@ export function docEmbed(
   } else if (docs.isClass(raw, e)) {
     description =
       withoutTags(e.description ?? "") +
-      "```ts\n" +
-      `class ${e.construct?.name ?? e.name} ${
-        e.extends ? `extends ${docs.flatTypeDescription(e.extends)} ` : ""
-      }{\n\tconstructor(\n${e.construct?.params
-        ?.map(
-          (param) =>
-            `\t\tpublic ${param.name}${
-              param.optional ? "?" : ""
-            }: ${docs.flatTypeDescription(param.type)}`
-        )
-        .join(",\n")}\n\t)\n}` +
-      "\n```"
+      core.code.stringify({
+        lang: "ts",
+        format: {
+          printWidth: 40,
+        },
+        content: `class ${e.construct?.name ?? e.name} ${
+          e.extends ? `extends ${docs.flatTypeDescription(e.extends)} ` : ""
+        }{constructor(${e.construct?.params
+          ?.map(
+            (param) =>
+              `public ${param.name}${
+                param.optional ? "?" : ""
+              }: ${docs.flatTypeDescription(param.type)}`
+          )
+          .join(", ")})}`,
+      })
   } else if (docs.isEvent(raw, e)) {
-    description = `${core.code.stringify({
-      lang: "js",
-      content: core.code.format(
-        `emitter.on("${e.name}", (${
+    description =
+      withoutTags(e.description ?? "") +
+      core.code.stringify({
+        lang: "ts",
+        format: {
+          printWidth: 40,
+        },
+        content: `interface EventEmitter { on(event: "${e.name}", fn: (${
           e.params
             ? e.params
                 .map((param) => {
-                  return `${param.name}${param.optional ? "?" : ""}`
+                  return `${param.name}${
+                    param.optional ? "?" : ""
+                  }: ${docs.flatTypeDescription(param.type)}`
                 })
                 .join(", ")
             : ""
-        }) => unknown)`,
-        "js",
-        {
-          printWidth: 60,
-        }
-      ),
-    })}\n${e.description}`
+        }) => void): this;}`,
+      })
   } else if (docs.isExternal(raw, e)) {
     authorName += " [external]"
   } else if (docs.isMethod(raw, e)) {
