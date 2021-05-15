@@ -8,9 +8,7 @@ const command: app.Command = {
   aliases: ["versions", "version", "src", "v"],
   description: "Manage versions",
   async run(message) {
-    const prefix = await app.prefix(message.guild ?? undefined)
-
-    return app.sendCommandDetails(message, this, prefix)
+    return app.sendCommandDetails(message, this)
   },
   subs: [
     {

@@ -72,8 +72,8 @@ export function docEmbed(
   if (!e)
     return embed
       .setColor("RED")
-      .setAuthor("Unknown element", lib.image)
-      .setDescription("Maybe try different path")
+      .setAuthor("404: Element not found", lib.image)
+      .setDescription("Maybe try an other path")
 
   const url = docs.buildURL(sourceName, e)
 
@@ -87,9 +87,21 @@ export function docEmbed(
   if (docs.isProp(raw, e)) {
     authorName += " [property]"
   } else if (docs.isClass(raw, e)) {
-    authorName += " [class]"
+    description =
+      withoutTags(e.description ?? "") +
+      "```ts\n" +
+      `class ${e.construct?.name ?? e.name} ${
+        e.extends ? `extends ${docs.flatTypeDescription(e.extends)} ` : ""
+      }{\n\tconstructor(\n${e.construct?.params
+        ?.map(
+          (param) =>
+            `\t\tpublic ${param.name}${
+              param.optional ? "?" : ""
+            }: ${docs.flatTypeDescription(param.type)}`
+        )
+        .join(",\n")}\n\t)\n}` +
+      "\n```"
   } else if (docs.isEvent(raw, e)) {
-    authorName += " [event]"
     description = `${core.code.stringify({
       lang: "js",
       content: core.code.format(
@@ -166,4 +178,8 @@ export function docEmbed(
 
 export function getLib(sourceName: docs.SourceName): Lib {
   return libs.find((lib) => lib.sourceNames.includes(sourceName)) as Lib
+}
+
+export function withoutTags(str: string): string {
+  return str.replace(/<\/?.+?>/g, "")
 }
