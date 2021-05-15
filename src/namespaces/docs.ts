@@ -77,7 +77,7 @@ export function docEmbed(
 
   const url = docs.buildURL(sourceName, e)
 
-  let description = e.description ?? "No description."
+  let description = withoutTags(e.description ?? "No description.")
   let authorName = e.name
 
   embed.setColor(lib.color)
@@ -85,7 +85,17 @@ export function docEmbed(
   const raw = docs.cache.get(sourceName) as docs.Raw
 
   if (docs.isProp(raw, e)) {
-    authorName += " [property]"
+    authorName = breadcrumb(e)
+    const type = docs.flatTypeDescription(e.type)
+    description =
+      withoutTags(e.description ?? "") +
+      core.code.stringify({
+        lang: "ts",
+        format: { printWidth: 40 },
+        content: `class ${e.parent?.name ?? "Parent"} { ${e.access ?? ""} ${
+          e.readonly ? "readonly" : ""
+        } ${e.name}: ${type === "function" ? "Function" : type} }`,
+      })
   } else if (docs.isClass(raw, e)) {
     description =
       withoutTags(e.description ?? "") +
@@ -147,12 +157,9 @@ export function docEmbed(
     authorName += " [param]"
   }
 
-  if ("type" in e && e.type) {
-    authorName += ` (${docs.flatTypeDescription(e.type)})`
-  }
-
   if ("deprecated" in e && e.deprecated) {
     description += `\n\n${deprecated} **Deprecated!**`
+    embed.setColor("YELLOW")
   }
 
   for (const key of ["props", "methods", "events"]) {
@@ -174,7 +181,7 @@ export function docEmbed(
   }
 
   if ("meta" in e && e.meta)
-    embed.setFooter(`${e.meta.path}/${e.meta.file} | line: ${e.meta.line}`)
+    embed.setFooter(`${e.meta.path}/${e.meta.file} - line: ${e.meta.line}`)
 
   return embed
     .setAuthor(authorName, lib.image, url ?? undefined)
@@ -187,4 +194,20 @@ export function getLib(sourceName: docs.SourceName): Lib {
 
 export function withoutTags(str: string): string {
   return str.replace(/<\/?.+?>/g, "")
+}
+
+export function breadcrumb(e: docs.SearchResult): string {
+  if (!e) return ""
+  else if (!e.parent) return e.name
+  return parents(e)
+    .reverse()
+    .filter((e) => e)
+    .map((e) => e?.name)
+    .join(".")
+}
+
+export function parents(e: docs.SearchResult): docs.SearchResult[] {
+  if (!e) return []
+  else if (!e.parent) return [e]
+  else return [e, ...parents(e.parent)]
 }
