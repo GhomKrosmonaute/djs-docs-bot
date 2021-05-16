@@ -61,10 +61,10 @@ export const libs: Lib[] = [
   },
 ]
 
-export function docEmbed(
+export async function docEmbed(
   sourceName: docs.SourceName,
   e: docs.SearchResult
-): discord.MessageEmbed {
+): Promise<discord.MessageEmbed> {
   const deprecated = "<:deprecated:835820600068800553>"
   const embed = new discord.MessageEmbed()
   const lib = getLib(sourceName)
@@ -77,92 +77,114 @@ export function docEmbed(
 
   const url = docs.buildURL(sourceName, e)
 
-  let description = withoutTags(e.description ?? "No description.")
-  let authorName = e.name
+  let description = docs.removeXMLTags(e.description ?? "No description.")
+  let authorName = docs.shortBreadcrumb(e)
+  let noNeedProps = false
 
   embed.setColor(lib.color)
 
   const raw = docs.cache.get(sourceName) as docs.Raw
 
   if (docs.isProp(raw, e)) {
-    authorName = breadcrumb(e)
     const type = docs.flatTypeDescription(e.type)
-    description =
-      withoutTags(e.description ?? "") +
-      core.code.stringify({
-        lang: "ts",
-        format: { printWidth: 40 },
-        content: `class ${e.parent?.name ?? "Parent"} { ${e.access ?? ""} ${
-          e.readonly ? "readonly" : ""
-        } ${e.name}: ${type === "function" ? "Function" : type} }`,
-      })
+    description += core.code.stringify({
+      lang: "ts",
+      format: { printWidth: 40 },
+      content: `class ${e.parent?.name ?? "Parent"} { ${e.access ?? ""} ${
+        e.readonly ? "readonly" : ""
+      } ${e.name}: ${type === "function" ? "Function" : type} }`,
+    })
   } else if (docs.isClass(raw, e)) {
-    description =
-      withoutTags(e.description ?? "") +
-      core.code.stringify({
-        lang: "ts",
-        format: {
-          printWidth: 40,
-        },
-        content: `class ${e.construct?.name ?? e.name} ${
-          e.extends ? `extends ${docs.flatTypeDescription(e.extends)} ` : ""
-        }{constructor(${e.construct?.params
-          ?.map(
-            (param) =>
-              `public ${param.name}${
-                param.optional ? "?" : ""
-              }: ${docs.flatTypeDescription(param.type)}`
-          )
-          .join(", ")})}`,
-      })
+    description += core.code.stringify({
+      lang: "ts",
+      format: {
+        printWidth: 40,
+      },
+      content: `class ${e.construct?.name ?? e.name} ${
+        e.extends ? `extends ${docs.flatTypeDescription(e.extends)} ` : ""
+      }{constructor(${e.construct?.params
+        ?.map(
+          (param) =>
+            `public ${param.name}${
+              param.optional ? "?" : ""
+            }: ${docs.flatTypeDescription(param.type)}`
+        )
+        .join(", ")})}`,
+    })
   } else if (docs.isEvent(raw, e)) {
-    description =
-      withoutTags(e.description ?? "") +
-      core.code.stringify({
-        lang: "ts",
-        format: {
-          printWidth: 40,
-        },
-        content: `interface EventEmitter { on(event: "${e.name}", fn: (${
-          e.params
-            ? e.params
-                .map((param) => {
-                  return `${param.name}${
-                    param.optional ? "?" : ""
-                  }: ${docs.flatTypeDescription(param.type)}`
-                })
-                .join(", ")
-            : ""
-        }) => void): this;}`,
-      })
+    description += core.code.stringify({
+      lang: "ts",
+      format: {
+        printWidth: 40,
+      },
+      content: `interface EventEmitter { on(event: "${e.name}", fn: (${
+        e.params
+          ? e.params
+              .map((param) => {
+                return `${param.name}${
+                  param.optional ? "?" : ""
+                }: ${docs.flatTypeDescription(param.type)}`
+              })
+              .join(", ")
+          : ""
+      }) => void): this;}`,
+    })
   } else if (docs.isExternal(raw, e)) {
-    authorName += " [external]"
+    authorName += " (external)"
   } else if (docs.isMethod(raw, e)) {
-    authorName = `${e.abstract ? "abstract" : ""} ${e.access ?? ""} ${
-      e.async ? "async " : ""
-    }${e.name}(${
-      e.params
-        ? e.params
-            .map((param) => {
-              return `${param.name}${param.optional ? "?" : ""}`
-            })
-            .join(", ")
-        : ""
-    })`
-  } else if (docs.isInterface(raw, e)) {
-    authorName += " [interface]"
-  } else if (docs.isTypedef(raw, e)) {
-    authorName += " [typedef]"
+    authorName += "()"
+    description += core.code.stringify({
+      lang: "ts",
+      format: { printWidth: 40 },
+      content: `${e.abstract ? "abstract" : ""} ${e.access ?? ""} ${
+        e.async ? "async" : ""
+      } function ${e.name}(${
+        e.params
+          ? e.params
+              .map((param) => {
+                return `${param.name}${
+                  param.optional ? "?" : ""
+                }: ${docs.flatTypeDescription(param.type)}`
+              })
+              .join(", ")
+          : ""
+      }): ${
+        e.returns
+          ? docs.flatTypeDescription(e.returns)
+          : e.returnsDescription ?? "void"
+      }`,
+    })
+  } else if (docs.isInterface(raw, e) || docs.isTypedef(raw, e)) {
+    noNeedProps = true
+    description += core.code.stringify({
+      lang: "ts",
+      format: { printWidth: 40 },
+      content: `interface ${e.name} { ${
+        e.props
+          ?.map((prop) => {
+            return `${prop.name}${
+              prop.nullable || prop.default ? "?" : ""
+            }: ${docs.flatTypeDescription(prop.type)}`
+          })
+          .join(",") ?? ""
+      } }`,
+    })
   } else {
-    authorName += " [param]"
+    const types = docs.flatTypeDescription(e.type).split(" | ")
+    for (const type of types) {
+      const E = await docs.search(raw, type)
+      if (E) return docEmbed(sourceName, E)
+    }
   }
 
   if ("deprecated" in e && e.deprecated) {
-    description += `\n\n${deprecated} **Deprecated!**`
+    description += `\n> ${deprecated} This element is **DEPRECATED**!`
     embed.setColor("YELLOW")
   }
 
   for (const key of ["props", "methods", "events"]) {
+    if (key === "props" && noNeedProps) continue
+
     // @ts-ignore
     if (key in e && e[key]) {
       embed.addField(
@@ -190,24 +212,4 @@ export function docEmbed(
 
 export function getLib(sourceName: docs.SourceName): Lib {
   return libs.find((lib) => lib.sourceNames.includes(sourceName)) as Lib
-}
-
-export function withoutTags(str: string): string {
-  return str.replace(/<\/?.+?>/g, "")
-}
-
-export function breadcrumb(e: docs.SearchResult): string {
-  if (!e) return ""
-  else if (!e.parent) return e.name
-  return parents(e)
-    .reverse()
-    .filter((e) => e)
-    .map((e) => e?.name)
-    .join(".")
-}
-
-export function parents(e: docs.SearchResult): docs.SearchResult[] {
-  if (!e) return []
-  else if (!e.parent) return [e]
-  else return [e, ...parents(e.parent)]
 }

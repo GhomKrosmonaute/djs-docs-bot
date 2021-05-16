@@ -37,7 +37,7 @@ const command: app.Command = {
         })
       )
 
-    return message.channel.send(app.docEmbed(sourceName, result))
+    return message.channel.send(await app.docEmbed(sourceName, result))
   },
 }
 
