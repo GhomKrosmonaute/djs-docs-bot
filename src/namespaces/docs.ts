@@ -1,6 +1,7 @@
 import * as core from "../app/core"
 import * as docs from "ghom-djs-docs"
 import discord from "discord.js"
+import users from "../tables/users"
 
 export interface Lib {
   name: string
@@ -212,4 +213,15 @@ export async function docEmbed(
 
 export function getLib(sourceName: docs.SourceName): Lib {
   return libs.find((lib) => lib.sourceNames.includes(sourceName)) as Lib
+}
+
+export async function getUserSourceName(
+  user: discord.User
+): Promise<docs.SourceName> {
+  const data = await users.query
+    .select("sourceName")
+    .where("id", user.id)
+    .first()
+
+  return data?.sourceName ?? "stable"
 }

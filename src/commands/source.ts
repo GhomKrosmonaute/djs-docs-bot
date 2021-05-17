@@ -6,7 +6,7 @@ import users from "../tables/users"
 const command: app.Command = {
   name: "source",
   aliases: ["versions", "version", "src", "v"],
-  description: "Manage versions",
+  description: "Manage discord.js versions",
   async run(message) {
     return app.sendCommandDetails(message, this)
   },
@@ -36,7 +36,7 @@ const command: app.Command = {
     },
     {
       name: "set",
-      description: "Set default version",
+      description: "Set your default version",
       positional: [
         {
           name: "sourceName",
@@ -58,8 +58,8 @@ const command: app.Command = {
 
         return message.channel.send(
           new app.MessageEmbed()
-            .setColor("BLURPLE")
-            .setTitle(`New default version setup`)
+            .setColor(lib.color)
+            .setAuthor(`New default version setup`, lib.image)
             .setDescription(`Your new default version is \`${lib.name}\``)
         )
       },
