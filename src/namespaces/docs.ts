@@ -65,16 +65,15 @@ export const libs: Lib[] = [
 export async function docEmbed(
   sourceName: docs.SourceName,
   e: docs.SearchResult
-): Promise<discord.MessageEmbed> {
+): Promise<discord.MessageEmbed | null> {
   const deprecated = "<:deprecated:835820600068800553>"
   const embed = new discord.MessageEmbed()
   const lib = getLib(sourceName)
 
-  if (!e)
-    return embed
-      .setColor("RED")
-      .setAuthor("404: Element not found", lib.image)
-      .setDescription("Maybe try an other path")
+  if (!e) return null //embed
+  // .setColor("RED")
+  // .setAuthor("404: Element not found", lib.image)
+  // .setDescription("Maybe try an other path")
 
   const url = docs.buildURL(sourceName, e)
 
