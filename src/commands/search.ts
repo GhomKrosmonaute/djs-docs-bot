@@ -44,9 +44,8 @@ const command: app.Command = {
       )
     }
 
-    const embed = await app.docEmbed(sourceName, result)
-
-    return embed && message.channel.send(embed)
+    if (result || (!result && !message.usedAsDefault))
+      return message.channel.send(await app.docEmbed(sourceName, result))
   },
 }
 
