@@ -17,7 +17,8 @@ export const libs: Lib[] = [
   {
     color: "BLURPLE",
     name: "discord.js",
-    image: "https://discord.js.org/static/logo-square.png",
+    image:
+      "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/discord.js.png",
     displayName: "Discord JS",
     github: "https://github.com/discordjs/discord.js",
     docs: "https://discord.js.org/#/docs/main/stable/general/welcome",
@@ -26,7 +27,8 @@ export const libs: Lib[] = [
   {
     color: "BLURPLE",
     name: "discord.js-commando",
-    image: "https://discord.js.org/static/logo-square.png",
+    image:
+      "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/discord.js.png",
     displayName: "Discord JS Commando",
     github: "https://github.com/discordjs/Commando",
     docs: "https://discord.js.org/#/docs/commando/master/general/welcome",
@@ -35,7 +37,8 @@ export const libs: Lib[] = [
   {
     color: "BLURPLE",
     name: "discord-rpc",
-    image: "https://discord.js.org/static/logo-square.png",
+    image:
+      "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/discord.js.png",
     displayName: "Discord RPC",
     github: "https://github.com/discordjs/RPC",
     docs: "https://discord.js.org/#/docs/rpc/master/general/welcome",
@@ -44,7 +47,8 @@ export const libs: Lib[] = [
   {
     color: "#87202F",
     name: "discord-akairo",
-    image: "https://avatars3.githubusercontent.com/u/48862924",
+    image:
+      "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/discord-akairo.png",
     displayName: "Discord Akairo",
     github: "https://github.com/discord-akairo/discord-akairo",
     docs:
@@ -54,7 +58,8 @@ export const libs: Lib[] = [
   {
     color: "BLURPLE",
     name: "@discordjs/collection",
-    image: "https://discord.js.org/static/logo-square.png",
+    image:
+      "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/discord.js.png",
     displayName: "Discord Collections",
     github: "https://github.com/discordjs/collection",
     docs: "https://discord.js.org/#/docs/collection/master/general/welcome",
@@ -180,6 +185,9 @@ export async function docEmbed(
   if ("deprecated" in e && e.deprecated) {
     description += `\n> ${deprecated} This element is **DEPRECATED**!`
     embed.setColor("YELLOW")
+    if (embed.author)
+      embed.author.iconURL =
+        "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/deprecated.png"
   }
 
   for (const key of ["props", "methods", "events"]) {
