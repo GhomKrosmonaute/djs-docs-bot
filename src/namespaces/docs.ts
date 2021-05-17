@@ -183,14 +183,6 @@ export async function docEmbed(
     }
   }
 
-  if ("deprecated" in e && e.deprecated) {
-    embed.setColor("#FFACAC")
-    embed.setFooter(
-      "This element is deprecated!",
-      "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/deprecated.png"
-    )
-  }
-
   for (const key of ["props", "methods", "events"]) {
     if (key === "props" && noNeedProps) continue
 
@@ -213,6 +205,14 @@ export async function docEmbed(
 
   if ("meta" in e && e.meta)
     embed.setFooter(`${e.meta.path}/${e.meta.file} - line: ${e.meta.line}`)
+
+  if ("deprecated" in e && e.deprecated) {
+    embed.setColor("#FFACAC")
+    embed.setFooter(
+      "This element is deprecated!",
+      "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/deprecated.png"
+    )
+  }
 
   return embed
     .setAuthor(authorName, lib.image, url ?? undefined)
