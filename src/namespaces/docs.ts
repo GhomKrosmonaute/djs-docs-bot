@@ -183,11 +183,11 @@ export async function docEmbed(
   }
 
   if ("deprecated" in e && e.deprecated) {
-    description += `\n> ${deprecated} This element is **DEPRECATED**!`
-    embed.setColor("YELLOW")
-    if (embed.author)
-      embed.author.iconURL =
-        "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/deprecated.png"
+    embed.setColor("#FFACAC")
+    embed.setFooter(
+      "This element is deprecated!",
+      "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/deprecated.png"
+    )
   }
 
   for (const key of ["props", "methods", "events"]) {
