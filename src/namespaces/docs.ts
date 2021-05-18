@@ -108,14 +108,18 @@ export async function docEmbed(
       },
       content: `class ${e.construct?.name ?? e.name} ${
         e.extends ? `extends ${docs.flatTypeDescription(e.extends)} ` : ""
-      }{constructor(${e.construct?.params
-        ?.map(
-          (param) =>
-            `public ${param.name}${
-              param.optional ? "?" : ""
-            }: ${docs.flatTypeDescription(param.type)}`
-        )
-        .join(", ")})}`,
+      }{${
+        e.construct
+          ? `constructor(${e.construct.params
+              ?.map(
+                (param) =>
+                  `public ${param.name}${
+                    param.optional ? "?" : ""
+                  }: ${docs.flatTypeDescription(param.type)}`
+              )
+              .join(", ")})`
+          : ""
+      }}`,
     })
   } else if (docs.isEvent(raw, e)) {
     description += core.code.stringify({
