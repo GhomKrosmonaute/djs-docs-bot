@@ -51,8 +51,7 @@ export const libs: Lib[] = [
       "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/discord-akairo.png",
     displayName: "Discord Akairo",
     github: "https://github.com/discord-akairo/discord-akairo",
-    docs:
-      "https://discord-akairo.github.io/#/docs/main/master/class/AkairoClient",
+    docs: "https://discord-akairo.github.io/#/docs/main/master/class/AkairoClient",
     sourceNames: ["akairo"],
   },
   {

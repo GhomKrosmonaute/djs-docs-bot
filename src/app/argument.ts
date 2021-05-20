@@ -34,6 +34,7 @@ export interface Option<Message extends command.CommandMessage>
     | "message"
     | "role"
     | "emote"
+    | "invite"
     | ((value: string, message: Message) => any)
   /**
    * If returns string, it used as error message
@@ -249,9 +250,10 @@ export async function castValue<Message extends command.CommandMessage>(
         break
       case "message":
         if (baseValue) {
-          const match = /^https?:\/\/discord\.com\/channels\/\d+\/(\d+)\/(\d+)$/.exec(
-            baseValue
-          )
+          const match =
+            /^https?:\/\/discord\.com\/channels\/\d+\/(\d+)\/(\d+)$/.exec(
+              baseValue
+            )
           if (match) {
             const [, channelID, messageID] = match
             const channel = message.client.channels.cache.get(channelID)
@@ -303,6 +305,21 @@ export async function castValue<Message extends command.CommandMessage>(
             if (unicodeMatch) setValue(unicodeMatch[0])
             else throw new Error("Invalid emote value!")
           }
+        } else throw empty
+        break
+      case "invite":
+        if (baseValue) {
+          if (command.isGuildMessage(message)) {
+            const invites = await message.guild.fetchInvites()
+            const invite = invites.find(
+              (invite) => invite.code === baseValue || invite.url === baseValue
+            )
+            if (invite) setValue(invite)
+            else throw new Error("Unknown invite!")
+          } else
+            throw new Error(
+              'The "Invite" casting is only available in a guild!'
+            )
         } else throw empty
         break
       default:
