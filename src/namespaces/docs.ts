@@ -108,16 +108,7 @@ export async function docEmbed(
       content: `class ${e.construct?.name ?? e.name} ${
         e.extends ? `extends ${docs.flatTypeDescription(e.extends)} ` : ""
       }{${
-        e.construct
-          ? `constructor(${e.construct.params
-              ?.map(
-                (param) =>
-                  `public ${param.name}${
-                    param.optional ? "?" : ""
-                  }: ${docs.flatTypeDescription(param.type)}`
-              )
-              .join(", ")})`
-          : ""
+        e.construct ? `constructor(${paramsToString(e.construct.params)})` : ""
       }}`,
     })
   } else if (docs.isEvent(raw, e)) {
@@ -126,17 +117,9 @@ export async function docEmbed(
       format: {
         printWidth: 40,
       },
-      content: `interface EventEmitter { on(event: "${e.name}", fn: (${
-        e.params
-          ? e.params
-              .map((param) => {
-                return `${param.name}${
-                  param.optional ? "?" : ""
-                }: ${docs.flatTypeDescription(param.type)}`
-              })
-              .join(", ")
-          : ""
-      }) => void): this;}`,
+      content: `interface EventEmitter { on(event: "${
+        e.name
+      }", fn: (${paramsToString(e.params)}) => void): this;}`,
     })
   } else if (docs.isExternal(raw, e)) {
     authorName += " (external)"
@@ -147,17 +130,7 @@ export async function docEmbed(
       format: { printWidth: 40 },
       content: `${e.abstract ? "abstract" : ""} ${e.access ?? ""} ${
         e.async ? "async" : ""
-      } function ${e.name}(${
-        e.params
-          ? e.params
-              .map((param) => {
-                return `${param.name}${
-                  param.optional ? "?" : ""
-                }: ${docs.flatTypeDescription(param.type)}`
-              })
-              .join(", ")
-          : ""
-      }): ${
+      } function ${e.name}(${paramsToString(e.params)}): ${
         e.returns
           ? docs.flatTypeDescription(e.returns)
           : e.returnsDescription ?? "void"
@@ -235,4 +208,30 @@ export async function getUserSourceName(
     .first()
 
   return data?.sourceName ?? "stable"
+}
+
+export function paramsToString(params?: docs.Param[]): string {
+  return params
+    ? params
+        .map((param, i, all) => {
+          if (docs.flatTypeDescription(param.type) === "Object") {
+            return `${param.name}${param.optional ? "?" : ""}: {${all
+              .slice(i + 1)
+              .filter((p) => p.name.startsWith(param.name))
+              .map(
+                (p) =>
+                  `${p.name.slice(p.name.indexOf(".") + 1)}${
+                    p.optional ? "?" : ""
+                  }: ${docs.flatTypeDescription(p.type)}`
+              )
+              .join(",")}}`
+          }
+          if (param.name.includes(".")) return ""
+          return `${param.name}${
+            param.optional ? "?" : ""
+          }: ${docs.flatTypeDescription(param.type)}`
+        })
+        .filter((line) => line.length > 0)
+        .join(", ")
+    : ""
 }
