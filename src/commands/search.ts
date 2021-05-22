@@ -28,7 +28,7 @@ const command: app.Command = {
     const sourceName = await app.getUserSourceName(message.author)
     const result = await docs.search(sourceName, message.args.path)
 
-    if (message.args.raw && result) {
+    if (message.args.raw && result)
       return message.channel.send(
         core.code.stringify({
           lang: "json",
@@ -42,7 +42,6 @@ const command: app.Command = {
           ).slice(0, 1500),
         })
       )
-    }
 
     if (result || (!result && !message.usedAsDefault))
       return message.channel.send(await app.docEmbed(sourceName, result))
