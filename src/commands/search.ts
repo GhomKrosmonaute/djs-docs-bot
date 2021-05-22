@@ -6,7 +6,7 @@ const command: app.Command = {
   name: "search",
   description: "Search object in documentation",
   isDefault: true,
-  middlewares: [({ author }) => author.bot],
+  middlewares: [({ author }) => !author.bot],
   rest: {
     name: "path",
     description: "The documentation path",
@@ -43,7 +43,7 @@ const command: app.Command = {
         })
       )
 
-    if (result || (!result && !message.usedAsDefault))
+    if (result || !message.usedAsDefault)
       return message.channel.send(await app.docEmbed(sourceName, result))
   },
 }
