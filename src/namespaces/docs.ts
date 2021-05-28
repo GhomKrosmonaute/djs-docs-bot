@@ -131,11 +131,21 @@ export async function docEmbed(
       content: `${e.abstract ? "abstract" : ""} ${e.access ?? ""} ${
         e.async ? "async" : ""
       } function ${e.name}(${paramsToString(e.params)}): ${
-        e.returns
-          ? docs.flatTypeDescription(e.returns)
-          : e.returnsDescription ?? "void"
+        e.returns ? docs.flatTypeDescription(e.returns) : "void"
       }`,
     })
+
+    if (e.returnsDescription)
+      embed.addField("Returns", docs.removeXMLTags(e.returnsDescription), false)
+    else if (e.returns) {
+      if ("description" in e.returns && e.returns.description) {
+        embed.addField(
+          "Returns",
+          docs.removeXMLTags(e.returns.description),
+          false
+        )
+      }
+    }
   } else if (docs.isInterface(raw, e) || docs.isTypedef(raw, e)) {
     noNeedProps = true
     description += core.code.stringify({
@@ -218,20 +228,27 @@ export function paramsToString(params?: docs.Param[]): string {
             return `${param.name}${param.optional ? "?" : ""}: {${all
               .slice(i + 1)
               .filter((p) => p.name.startsWith(param.name))
-              .map(
-                (p) =>
-                  `${p.name.slice(p.name.indexOf(".") + 1)}${
-                    p.optional ? "?" : ""
-                  }: ${docs.flatTypeDescription(p.type)}`
+              .map((p) =>
+                paramToString(p, p.name.slice(p.name.indexOf(".") + 1))
               )
               .join(",")}}`
           }
           if (param.name.includes(".")) return ""
-          return `${param.name}${
-            param.optional ? "?" : ""
-          }: ${docs.flatTypeDescription(param.type)}`
+          return paramToString(param)
         })
         .filter((line) => line.length > 0)
         .join(", ")
+    : ""
+}
+
+export function paramToString(param: docs.Param, name = param.name): string {
+  return `${name}${param.optional ? "?" : ""}: ${docs.flatTypeDescription(
+    param.type
+  )}${defaultToString(param.default)}`
+}
+
+export function defaultToString(def: any): string {
+  return def !== undefined
+    ? ` = ${typeof def === "string" ? `"${def}"` : def}`
     : ""
 }
