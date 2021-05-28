@@ -107,6 +107,16 @@ export interface Command<Message extends CommandMessage = CommandMessage> {
   userPermissions?: core.Scrap<discord.PermissionString[], [message: Message]>
   botPermissions?: core.Scrap<discord.PermissionString[], [message: Message]>
 
+  roles?: core.Scrap<
+    (
+      | discord.RoleResolvable
+      | discord.RoleResolvable[]
+      | [discord.RoleResolvable]
+      | [discord.RoleResolvable[]]
+    )[],
+    [message: Message]
+  >
+
   /**
    * Middlewares can stop the command if returning a string (string is displayed as error message in discord)
    */
@@ -256,7 +266,7 @@ export async function prepareCommand<Message extends CommandMessage>(
             `Please wait ${Math.ceil(
               (coolDown.time + coolDownTime - Date.now()) / 1000
             )} seconds...`,
-            message.client.user?.displayAvatarURL()
+            message.client.user.displayAvatarURL()
           )
       }
     }
@@ -275,7 +285,7 @@ export async function prepareCommand<Message extends CommandMessage>(
         .setColor("RED")
         .setAuthor(
           "This command must be used in DM.",
-          message.client.user?.displayAvatarURL()
+          message.client.user.displayAvatarURL()
         )
 
     if (core.scrap(cmd.guildOwnerOnly, message))
@@ -287,7 +297,7 @@ export async function prepareCommand<Message extends CommandMessage>(
           .setColor("RED")
           .setAuthor(
             "You must be the guild owner.",
-            message.client.user?.displayAvatarURL()
+            message.client.user.displayAvatarURL()
           )
 
     if (cmd.botPermissions) {
@@ -302,9 +312,9 @@ export async function prepareCommand<Message extends CommandMessage>(
         )
           return new discord.MessageEmbed()
             .setColor("RED")
-            .setAuthor(
-              `I need the \`${permission}\` permission to call this command.`,
-              message.client.user?.displayAvatarURL()
+            .setAuthor("Oops!", message.client.user.displayAvatarURL())
+            .setDescription(
+              `I need the \`${permission}\` permission to call this command.`
             )
     }
 
@@ -320,10 +330,104 @@ export async function prepareCommand<Message extends CommandMessage>(
         )
           return new discord.MessageEmbed()
             .setColor("RED")
-            .setAuthor(
-              `You need the \`${permission}\` permission to call this command.`,
-              message.client.user?.displayAvatarURL()
+            .setAuthor("Oops!", message.client.user.displayAvatarURL())
+            .setDescription(
+              `You need the \`${permission}\` permission to call this command.`
             )
+    }
+
+    if (cmd.roles) {
+      const roles = await core.scrap(cmd.roles, message)
+
+      const isRole = (r: any): r is discord.RoleResolvable => {
+        return typeof r === "string" || r instanceof discord.Role
+      }
+
+      const getRoleId = (r: discord.RoleResolvable): string => {
+        return typeof r === "string" ? r : r.id
+      }
+
+      const member = await message.member.fetch()
+
+      for (const roleCond of roles) {
+        if (isRole(roleCond)) {
+          const id = getRoleId(roleCond)
+
+          if (!member.roles.cache.has(id)) {
+            return new discord.MessageEmbed()
+              .setColor("RED")
+              .setAuthor("Oops!", message.client.user.displayAvatarURL())
+              .setDescription(
+                `You must have the <@${id}> role to call this command.`
+              )
+          }
+        } else {
+          if (roleCond.length === 1) {
+            const _roleCond = roleCond[0]
+            if (isRole(_roleCond)) {
+              const id = getRoleId(_roleCond)
+
+              if (member.roles.cache.has(id)) {
+                return new discord.MessageEmbed()
+                  .setColor("RED")
+                  .setAuthor("Oops!", message.client.user.displayAvatarURL())
+                  .setDescription(
+                    `You mustn't have the <@${id}> role to call this command.`
+                  )
+              }
+            } else {
+              for (const role of _roleCond) {
+                if (member.roles.cache.has(getRoleId(role))) {
+                  return new discord.MessageEmbed()
+                    .setColor("RED")
+                    .setAuthor("Oops!", message.client.user.displayAvatarURL())
+                    .setDescription(
+                      `You mustn't have the <@${getRoleId(
+                        role
+                      )}> role to call this command.`
+                    )
+                }
+              }
+            }
+          } else {
+            let someRoleGiven = false
+
+            for (const role of roleCond) {
+              if (Array.isArray(role)) {
+                logger.warn(
+                  `Bad command.roles structure in ${chalk.bold(
+                    commandBreadcrumb(cmd, "/")
+                  )} command.`,
+                  "handler"
+                )
+              } else {
+                const id = getRoleId(role)
+
+                if (member.roles.cache.has(id)) {
+                  someRoleGiven = true
+                  break
+                }
+              }
+            }
+
+            if (!someRoleGiven)
+              return new discord.MessageEmbed()
+                .setColor("RED")
+                .setAuthor("Oops!", message.client.user.displayAvatarURL())
+                .setDescription(
+                  `You must have at least one of the following roles to call this command.\n${[
+                    ...roleCond,
+                  ]
+                    .filter(
+                      (role): role is discord.RoleResolvable =>
+                        !Array.isArray(role)
+                    )
+                    .map((role) => `<@${getRoleId(role)}>`)
+                    .join(" ")}`
+                )
+          }
+        }
+      }
     }
   }
 
@@ -333,7 +437,7 @@ export async function prepareCommand<Message extends CommandMessage>(
         .setColor("RED")
         .setAuthor(
           "This command must be used in a guild.",
-          message.client.user?.displayAvatarURL()
+          message.client.user.displayAvatarURL()
         )
   }
 
@@ -343,7 +447,7 @@ export async function prepareCommand<Message extends CommandMessage>(
         .setColor("RED")
         .setAuthor(
           "You must be my owner.",
-          message.client.user?.displayAvatarURL()
+          message.client.user.displayAvatarURL()
         )
 
   if (cmd.middlewares) {
@@ -355,7 +459,7 @@ export async function prepareCommand<Message extends CommandMessage>(
       if (typeof result === "string")
         return new discord.MessageEmbed()
           .setColor("RED")
-          .setAuthor(result, message.client.user?.displayAvatarURL())
+          .setAuthor(result, message.client.user.displayAvatarURL())
 
       if (!result) return false
     }
@@ -384,7 +488,7 @@ export async function prepareCommand<Message extends CommandMessage>(
               .setColor("RED")
               .setAuthor(
                 `Missing positional "${positional.name}"`,
-                message.client.user?.displayAvatarURL()
+                message.client.user.displayAvatarURL()
               )
               .setDescription(
                 positional.description
@@ -411,7 +515,7 @@ export async function prepareCommand<Message extends CommandMessage>(
           if (checked !== true) return checked
         }
 
-        if (positional.castValue) {
+        if (value !== null && positional.castValue) {
           const casted = await argument.castValue(
             positional,
             "positional",
@@ -421,6 +525,17 @@ export async function prepareCommand<Message extends CommandMessage>(
           )
 
           if (casted !== true) return casted
+        }
+
+        if (value !== null && positional.checkCastedValue) {
+          const checked = await argument.checkCastedValue(
+            positional,
+            "argument",
+            value,
+            message
+          )
+
+          if (checked !== true) return checked
         }
 
         context.restPositional.shift()
@@ -448,7 +563,7 @@ export async function prepareCommand<Message extends CommandMessage>(
             .setColor("RED")
             .setAuthor(
               `Missing argument "${option.name}"`,
-              message.client.user?.displayAvatarURL()
+              message.client.user.displayAvatarURL()
             )
             .setDescription(
               option.description
@@ -485,6 +600,17 @@ export async function prepareCommand<Message extends CommandMessage>(
           )
 
           if (casted !== true) return casted
+        }
+
+        if (value !== null && option.checkCastedValue) {
+          const checked = await argument.checkCastedValue(
+            option,
+            "argument",
+            value,
+            message
+          )
+
+          if (checked !== true) return checked
         }
       }
     }
@@ -525,7 +651,7 @@ export async function prepareCommand<Message extends CommandMessage>(
             .setColor("RED")
             .setAuthor(
               `Missing rest "${rest.name}"`,
-              message.client.user?.displayAvatarURL()
+              message.client.user.displayAvatarURL()
             )
             .setDescription(
               rest.description ??
@@ -619,7 +745,7 @@ export async function sendCommandDetails<Message extends CommandMessage>(
 
   const embed = new discord.MessageEmbed()
     .setColor("BLURPLE")
-    .setAuthor("Command details", message.client.user?.displayAvatarURL())
+    .setAuthor("Command details", message.client.user.displayAvatarURL())
     .setTitle(
       `${pattern} ${[...positionalList, restPattern, ...flagList].join(" ")} ${
         cmd.options ? "[OPTIONS]" : ""
