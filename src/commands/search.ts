@@ -2,9 +2,10 @@ import * as docs from "ghom-djs-docs"
 import * as app from "../app"
 import * as core from "../app/core"
 
-const command: app.Command = {
+module.exports = new app.Command({
   name: "search",
   description: "Search object in documentation",
+  channelType: "all",
   isDefault: true,
   middlewares: [({ author }) => !author.bot],
   rest: {
@@ -46,6 +47,4 @@ const command: app.Command = {
     if (result || !message.usedAsDefault)
       return message.channel.send(await app.docEmbed(sourceName, result))
   },
-}
-
-module.exports = command
+})

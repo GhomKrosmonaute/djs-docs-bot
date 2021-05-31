@@ -3,17 +3,19 @@ import * as docs from "ghom-djs-docs"
 
 import users from "../tables/users"
 
-const command: app.Command = {
+module.exports = new app.Command({
   name: "source",
   aliases: ["versions", "version", "src", "v"],
+  channelType: "all",
   description: "Manage discord.js versions",
   async run(message) {
     return app.sendCommandDetails(message, this)
   },
   subs: [
-    {
+    new app.Command({
       name: "list",
       description: "List versions",
+      channelType: "all",
       async run(message) {
         return message.channel.send(
           new app.MessageEmbed()
@@ -33,10 +35,11 @@ const command: app.Command = {
             )
         )
       },
-    },
-    {
+    }),
+    new app.Command({
       name: "set",
       description: "Set your default version",
+      channelType: "all",
       positional: [
         {
           name: "sourceName",
@@ -63,8 +66,6 @@ const command: app.Command = {
             .setDescription(`Your new default version is \`${lib.name}\``)
         )
       },
-    },
+    }),
   ],
-}
-
-module.exports = command
+})

@@ -1,9 +1,10 @@
 import * as app from "../app"
 
-const command: app.Command = {
+module.exports = new app.Command({
   name: "help",
   aliases: ["h", "usage"],
   botPermissions: ["SEND_MESSAGES"],
+  channelType: "all",
   description: "Help menu",
   longDescription: "Display all commands of bot or detail a target command.",
   positional: [
@@ -71,21 +72,17 @@ const command: app.Command = {
     }
   },
   subs: [
-    {
+    new app.Command({
       name: "all",
       aliases: ["ls", "list", "full"],
+      channelType: "all",
       description: "Get all commands of bot",
       async run(message) {
-        new app.Paginator(
-          app.Paginator.divider(
-            await Promise.all(
-              app.commands.map(async (cmd) => {
-                return `**${message.usedPrefix}${cmd.name}** - ${
-                  (await app.scrap(cmd.description, message)) ??
-                  "no description"
-                }`
-              })
-            ),
+        new app.Paginator({
+          pages: app.Paginator.divider(
+            app.commands.map((cmd) => {
+              return app.commandToListItem(message, cmd)
+            }),
             10
           ).map((page) => {
             return new app.MessageEmbed()
@@ -97,12 +94,10 @@ const command: app.Command = {
               .setDescription(page.join("\n"))
               .setFooter(`${message.usedPrefix}help <command>`)
           }),
-          message.channel,
-          (reaction, user) => user.id === message.author.id
-        )
+          channel: message.channel,
+          filter: (reaction, user) => user.id === message.author.id,
+        })
       },
-    },
+    }),
   ],
-}
-
-module.exports = command
+})
