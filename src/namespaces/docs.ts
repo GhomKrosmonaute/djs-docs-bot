@@ -248,7 +248,5 @@ export function paramToString(param: docs.Param, name = param.name): string {
 }
 
 export function defaultToString(def: any): string {
-  return def !== undefined
-    ? ` = ${typeof def === "string" ? `"${def}"` : def}`
-    : ""
+  return def !== undefined ? ` = ${def}` : ""
 }
