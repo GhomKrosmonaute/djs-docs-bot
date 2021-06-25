@@ -5,3 +5,7 @@ This bot is a direct link between the discord.js documentation and the Discord a
 
 ## Change prefix
 `*prefix [prefix]  [--help] [OPTIONS]`
+
+## Change documentation source
+1. `*source list`
+2. `*source <name>`
