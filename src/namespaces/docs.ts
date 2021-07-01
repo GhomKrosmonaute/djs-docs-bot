@@ -131,7 +131,11 @@ export async function docEmbed(
       content: `${e.abstract ? "abstract" : ""} ${e.access ?? ""} ${
         e.async ? "async" : ""
       } function ${e.name}(${paramsToString(e.params)}): ${
-        e.returns ? docs.flatTypeDescription(e.returns) : "void"
+        e.returns
+          ? docs.flatTypeDescription(e.returns)
+          : e.async
+          ? "Promise<void>"
+          : "void"
       }`,
     })
 
