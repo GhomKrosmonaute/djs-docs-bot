@@ -144,12 +144,16 @@ export async function docEmbed(
     })
 
     if (e.returnsDescription)
-      embed.addField("Returns", docs.removeXMLTags(e.returnsDescription), false)
+      embed.addField(
+        "Returns",
+        docs.removeXMLTags(e.returnsDescription).slice(0, 1024),
+        false
+      )
     else if (e.returns) {
       if ("description" in e.returns && e.returns.description) {
         embed.addField(
           "Returns",
-          docs.removeXMLTags(e.returns.description),
+          docs.removeXMLTags(e.returns.description).slice(0, 1024),
           false
         )
       }
@@ -191,7 +195,8 @@ export async function docEmbed(
               item.deprecated ? "~~" : ""
             } ${item.deprecated ? deprecated : ""}`
           })
-          .join("\n"),
+          .join("\n")
+          .slice(0, 1024),
         true
       )
     }
