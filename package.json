@@ -36,7 +36,7 @@
     "dotenv": "^10.0.0",
     "emoji-regex": "^9.2.2",
     "figlet": "^1.5.2",
-    "ghom-djs-docs": "^1.0.12",
+    "ghom-djs-docs": "^1.0.13",
     "ghom-eval": "^1.0.3",
     "ghom-prettify": "^2.0.1",
     "knex": "^0.95.11",
@@ -61,6 +61,7 @@
     "del": "^6.0.0",
     "discord-api-types": "^0.23.1",
     "esbuild": "^0.12.28",
+    "esm": "^3.2.25",
     "fancy-log": "^1.3.3",
     "git-commit-info": "^2.0.0",
     "gulp": "^4.0.2",
@@ -70,8 +71,7 @@
     "make-bot.ts": "^2.1.2",
     "nodemon": "^2.0.12",
     "typescript": "^4.4.3",
-    "vinyl-paths": "^4.0.0",
-    "esm": "^3.2.25"
+    "vinyl-paths": "^4.0.0"
   },
   "engines": {
     "node": ">=14",
