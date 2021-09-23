@@ -22,7 +22,7 @@ export const libs: Lib[] = [
     displayName: "Discord JS",
     github: "https://github.com/discordjs/discord.js",
     docs: "https://discord.js.org/#/docs/main/stable/general/welcome",
-    sourceNames: ["stable", "master"],
+    sourceNames: ["stable", "main"],
   },
   {
     color: "BLURPLE",
