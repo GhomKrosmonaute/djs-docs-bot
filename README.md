@@ -1,4 +1,4 @@
-# Documantation Discord Bot
+# Documentation Discord Bot
 This bot is a direct link between the discord.js documentation and the Discord application.  
 
 ![example](https://media.discordapp.net/attachments/609313381421154304/858094174082826269/unknown.png)
