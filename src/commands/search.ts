@@ -1,13 +1,13 @@
 import * as docs from "ghom-djs-docs"
-import * as app from "../app"
-import * as core from "../app/core"
+import * as app from "../app.js"
+import * as core from "../app/core.js"
 
-module.exports = new app.Command({
+export default new app.Command({
   name: "search",
   description: "Search object in documentation",
   channelType: "all",
   isDefault: true,
-  middlewares: [({ author }) => !author.bot],
+  middlewares: [({ author }, data) => ({ result: !author.bot, data })],
   rest: {
     name: "path",
     description: "The documentation path",

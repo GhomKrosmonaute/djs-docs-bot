@@ -1,4 +1,4 @@
-import * as app from "../app"
+import * as app from "../app.js"
 import * as docs from "ghom-djs-docs"
 
 const table = new app.Table<{

@@ -1,27 +1,45 @@
-import * as app from "../app"
+import * as app from "../app.js"
 import yargsParser from "yargs-parser"
 
-const listener: app.Listener<"message"> = {
-  event: "message",
+const listener: app.Listener<"messageCreate"> = {
+  event: "messageCreate",
   async run(message) {
-    if (!app.isCommandMessage(message)) return
+    if (!app.isNormalMessage(message)) return
+
+    const prefix = await app.prefix(message.guild ?? undefined)
+
+    if (new RegExp(`^<@!?${message.client.user.id}>$`).test(message.content))
+      return message.channel.send({
+        embeds: [
+          new app.MessageEmbed()
+            .setColor("BLURPLE")
+            .setDescription(`My prefix is \`${prefix}\``),
+        ],
+      })
 
     message.usedAsDefault = false
 
-    message.send = async function (sent) {
+    message.send = async function (
+      this: app.NormalMessage,
+      sent: app.SentItem
+    ) {
       return this.channel.send(sent)
-    }
+    }.bind(message)
 
-    message.sendTimeout = async function (timeout, sent) {
+    message.sendTimeout = async function (
+      this: app.NormalMessage,
+      timeout: number,
+      sent: app.SentItem
+    ) {
       const m = await this.channel.send(sent)
       setTimeout(
-        function (this: app.CommandMessage) {
+        function (this: app.NormalMessage) {
           if (!this.deleted) this.delete().catch()
         }.bind(this),
         timeout
       )
       return m
-    }
+    }.bind(message)
 
     message.isFromBotOwner = message.author.id === process.env.BOT_OWNER
 
@@ -30,13 +48,11 @@ const listener: app.Listener<"message"> = {
 
     if (app.isGuildMessage(message)) {
       message.isFromGuildOwner =
-        message.isFromBotOwner || message.guild.ownerID === message.author.id
+        message.isFromBotOwner || message.guild.ownerId === message.author.id
 
       app.emitMessage(message.guild, message)
       app.emitMessage(message.member, message)
     }
-
-    const prefix = await app.prefix(message.guild ?? undefined)
 
     let dynamicContent = message.content
 
@@ -125,12 +141,15 @@ const listener: app.Listener<"message"> = {
       parsedArgs,
       key,
     })
-    if (typeof prepared !== "boolean") return message.channel.send(prepared)
+
+    if (typeof prepared !== "boolean")
+      return message.channel.send({ embeds: [prepared] })
+
     if (!prepared) return
 
     try {
       await cmd.options.run.bind(cmd)(message)
-    } catch (error) {
+    } catch (error: any) {
       app.error(error, "handler", true)
       message.channel
         .send(
@@ -148,4 +167,4 @@ const listener: app.Listener<"message"> = {
   },
 }
 
-module.exports = listener
+export default listener

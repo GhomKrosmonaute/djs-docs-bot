@@ -1,12 +1,12 @@
-import * as core from "../app/core"
+import * as core from "../app/core.js"
 import * as docs from "ghom-djs-docs"
 import discord from "discord.js"
-import users from "../tables/users"
+import users from "../tables/users.js"
 
 export interface Lib {
   name: string
   displayName: string
-  color: string
+  color: discord.ColorResolvable
   image: string
   github: string
   docs: string
@@ -69,16 +69,20 @@ export const libs: Lib[] = [
 export async function docEmbed(
   sourceName: docs.SourceName,
   e: docs.SearchResult
-): Promise<discord.MessageEmbed> {
+): Promise<{ embeds: [discord.MessageEmbed] }> {
   const deprecated = "<:deprecated:835820600068800553>"
   const embed = new discord.MessageEmbed()
   const lib = getLib(sourceName)
 
   if (!e)
-    return embed
-      .setColor("RED")
-      .setAuthor("404: Element not found", lib.image)
-      .setDescription("Maybe try an other path")
+    return {
+      embeds: [
+        embed
+          .setColor("RED")
+          .setAuthor("404: Element not found", lib.image)
+          .setDescription("Maybe try an other path"),
+      ],
+    }
 
   const url = docs.buildURL(sourceName, e)
 
@@ -204,9 +208,13 @@ export async function docEmbed(
     )
   }
 
-  return embed
-    .setAuthor(authorName, lib.image, url ?? undefined)
-    .setDescription(description)
+  return {
+    embeds: [
+      embed
+        .setAuthor(authorName, lib.image, url ?? undefined)
+        .setDescription(description),
+    ],
+  }
 }
 
 export function getLib(sourceName: docs.SourceName): Lib {

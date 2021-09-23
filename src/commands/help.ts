@@ -1,6 +1,6 @@
-import * as app from "../app"
+import * as app from "../app.js"
 
-module.exports = new app.Command({
+export default new app.Command({
   name: "help",
   aliases: ["h", "usage"],
   botPermissions: ["SEND_MESSAGES"],
@@ -20,55 +20,65 @@ module.exports = new app.Command({
       if (cmd) {
         return app.sendCommandDetails(message, cmd)
       } else {
-        await message.channel.send(
-          new app.MessageEmbed()
-            .setColor("RED")
-            .setAuthor(
-              `Unknown command "${message.args.command}"`,
-              message.client.user?.displayAvatarURL()
-            )
-        )
+        await message.channel.send({
+          embeds: [
+            new app.MessageEmbed()
+              .setColor("RED")
+              .setAuthor(
+                `Unknown command "${message.args.command}"`,
+                message.client.user?.displayAvatarURL()
+              ),
+          ],
+        })
       }
     } else {
       const sourceName = await app.getUserSourceName(message.author)
       const lib = app.getLib(sourceName)
-      const inviteLink = await message.client.generateInvite({
-        permissions: ["ATTACH_FILES", "USE_EXTERNAL_EMOJIS"],
+      const inviteLink = message.client.generateInvite({
+        scopes: ["bot"],
+        permissions: [
+          app.Permissions.FLAGS.ATTACH_FILES,
+          app.Permissions.FLAGS.USE_EXTERNAL_EMOJIS,
+        ],
       })
 
-      await message.channel.send(
-        new app.MessageEmbed()
-          .setColor(lib.color)
-          .setAuthor(
-            `Bot invitation link`,
-            message.client.user?.avatarURL({ dynamic: true }) ?? undefined
-          )
-          .setDescription(
-            `Gateway between the Discord.js docs and Discord.\n` +
-              `Bot in open source, its code is shared in [GitHub](https://github.com/CamilleAbella/djs-docs-bot).\n` +
-              `🔗 [Invitation link](${inviteLink}) | 🔗 [Support server](https://discord.gg/3vC2XWK)`
-          )
-      )
+      await message.channel.send({
+        embeds: [
+          new app.MessageEmbed()
+            .setColor(lib.color)
+            .setAuthor(
+              `Bot invitation link`,
+              message.client.user?.avatarURL({ dynamic: true }) ?? undefined
+            )
+            .setDescription(
+              `Gateway between the Discord.js docs and Discord.\n` +
+                `Bot in open source, its code is shared in [GitHub](https://github.com/CamilleAbella/djs-docs-bot).\n` +
+                `🔗 [Invitation link](${inviteLink}) | 🔗 [Support server](https://discord.gg/3vC2XWK)`
+            ),
+        ],
+      })
 
-      return message.channel.send(
-        new app.MessageEmbed()
-          .setColor(lib.color)
-          .setAuthor(`How to use documentations ?`, lib.image)
-          .setDescription(
-            `**Syntax** : \`${message.usedPrefix}Parent [Child [Child [Child [...]]]]\`\n` +
-              `**Rules** ↓\n` +
-              `🔹 Write your arguments as if they were a path.\n` +
-              `🔹 Your arguments must be separated by spaces.\n` +
-              `🔹 You can not start your path with a child.\n` +
-              `**To test** ↓ \`\`\`\n` +
-              `\t${message.usedPrefix}client\n` +
-              `\t${message.usedPrefix}message.reply\n` +
-              `\t${message.usedPrefix}guildmember.user.send\n` +
-              `\t${message.usedPrefix}guildmember.user.send.options\n` +
-              `\`\`\``
-          )
-          .setFooter(`For all commands: ${message.usedPrefix}help all`)
-      )
+      return message.channel.send({
+        embeds: [
+          new app.MessageEmbed()
+            .setColor(lib.color)
+            .setAuthor(`How to use documentations ?`, lib.image)
+            .setDescription(
+              `**Syntax** : \`${message.usedPrefix}Parent [Child [Child [Child [...]]]]\`\n` +
+                `**Rules** ↓\n` +
+                `🔹 Write your arguments as if they were a path.\n` +
+                `🔹 Your arguments must be separated by spaces.\n` +
+                `🔹 You can not start your path with a child.\n` +
+                `**To test** ↓ \`\`\`\n` +
+                `\t${message.usedPrefix}client\n` +
+                `\t${message.usedPrefix}message.reply\n` +
+                `\t${message.usedPrefix}guildmember.user.send\n` +
+                `\t${message.usedPrefix}guildmember.user.send.options\n` +
+                `\`\`\``
+            )
+            .setFooter(`For all commands: ${message.usedPrefix}help all`),
+        ],
+      })
     }
   },
   subs: [

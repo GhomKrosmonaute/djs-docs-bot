@@ -4,7 +4,7 @@ import boxen from "boxen"
 import chalk from "chalk"
 import * as docs from "ghom-djs-docs"
 
-import * as app from "../app"
+import * as app from "../app.js"
 
 const listener: app.Listener<"ready"> = {
   event: "ready",
@@ -37,4 +37,4 @@ const listener: app.Listener<"ready"> = {
   },
 }
 
-module.exports = listener
+export default listener
