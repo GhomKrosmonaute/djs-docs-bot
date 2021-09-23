@@ -1,3 +1,4 @@
+import fs from "fs"
 import figlet from "figlet"
 import path from "path"
 import boxen from "boxen"
@@ -15,7 +16,9 @@ const listener: app.Listener<"ready"> = {
     await docs.fetchAll({ force: true })
 
     figlet(
-      require(path.join(process.cwd(), "package.json")).name,
+      JSON.parse(
+        fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8")
+      ).name,
       (err, value) => {
         if (err) return
 
