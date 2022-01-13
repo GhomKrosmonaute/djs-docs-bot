@@ -8,15 +8,13 @@ import * as command from "./command.js"
 export interface Argument {
   name: string
   description: string
-  castingErrorMessage?: string | discord.MessageEmbed
-  checkingErrorMessage?: string | discord.MessageEmbed
-  missingErrorMessage?: string | discord.MessageEmbed
 }
 
 export interface Rest<Message extends command.NormalMessage> extends Argument {
   required?: core.Scrap<boolean, [message?: Message]>
   default?: core.Scrap<string, [message?: Message]>
   all?: boolean
+  missingErrorMessage?: string | discord.MessageEmbed
 }
 
 export interface Option<Message extends command.NormalMessage>
@@ -32,14 +30,10 @@ export interface Option<Message extends command.NormalMessage>
     | "regex"
     | "array"
     | "user"
-    | "user+"
     | "member"
-    | "member+"
     | "channel"
-    | "channel+"
     | "message"
     | "role"
-    | "role+"
     | "emote"
     | "invite"
     | ((value: string, message: Message) => any)
@@ -54,7 +48,10 @@ export interface Option<Message extends command.NormalMessage>
     boolean | string,
     [value: any, message?: Message]
   >
-  typeDescription?: core.Scrap<string, [value: string, message?: Message]>
+  castingDescription?: core.Scrap<string, [value: string, message?: Message]>
+  checkingErrorMessage?: string | discord.MessageEmbed
+  castingErrorMessage?: string | discord.MessageEmbed
+  missingErrorMessage?: string | discord.MessageEmbed
 }
 
 export type Positional<Message extends command.NormalMessage> = Omit<
@@ -63,16 +60,13 @@ export type Positional<Message extends command.NormalMessage> = Omit<
 >
 
 export interface Flag<Message extends command.NormalMessage>
-  extends Pick<
-    Option<Message>,
-    "name" | "aliases" | "description" | "castingErrorMessage"
-  > {
+  extends Pick<Option<Message>, "name" | "aliases" | "description"> {
   flag: string
 }
 
 export function resolveGivenArgument<Message extends command.NormalMessage>(
   parsedArgs: yargsParser.Arguments,
-  arg: Option<Message> | Flag<Message>
+  arg: Option<any> | Flag<any>
 ): {
   given: boolean
   nameIsGiven: boolean
@@ -107,7 +101,7 @@ export function resolveGivenArgument<Message extends command.NormalMessage>(
 }
 
 export async function checkValue<Message extends command.NormalMessage>(
-  subject: Pick<Option<Message>, "checkValue" | "name">,
+  subject: Pick<Option<any>, "checkValue" | "name">,
   subjectType: "positional" | "argument",
   value: string,
   message: Message
@@ -116,7 +110,7 @@ export async function checkValue<Message extends command.NormalMessage>(
 
   if (Array.isArray(subject.checkValue)) {
     if (subject.checkValue.includes(value)) {
-      return new discord.MessageEmbed()
+      return new core.SafeMessageEmbed()
         .setColor("RED")
         .setAuthor(
           `Bad ${subjectType} pattern "${subject.name}".`,
@@ -135,7 +129,7 @@ export async function checkValue<Message extends command.NormalMessage>(
   )
 
   if (typeof checkResult === "string") {
-    return new discord.MessageEmbed()
+    return new core.SafeMessageEmbed()
       .setColor("RED")
       .setAuthor(
         `Bad ${subjectType} tested "${subject.name}".`,
@@ -146,7 +140,7 @@ export async function checkValue<Message extends command.NormalMessage>(
 
   if (typeof checkResult === "boolean") {
     if (!checkResult) {
-      return new discord.MessageEmbed()
+      return new core.SafeMessageEmbed()
         .setColor("RED")
         .setAuthor(
           `Bad ${subjectType} tested "${subject.name}".`,
@@ -169,7 +163,7 @@ export async function checkValue<Message extends command.NormalMessage>(
   }
 
   if (!checkResult.test(value)) {
-    return new discord.MessageEmbed()
+    return new core.SafeMessageEmbed()
       .setColor("RED")
       .setAuthor(
         `Bad ${subjectType} pattern "${subject.name}".`,
@@ -182,7 +176,7 @@ export async function checkValue<Message extends command.NormalMessage>(
 
 export async function checkCastedValue<Message extends command.NormalMessage>(
   subject: Pick<
-    Option<Message>,
+    Option<any>,
     "checkCastedValue" | "name" | "checkingErrorMessage"
   >,
   subjectType: "positional" | "argument",
@@ -191,8 +185,6 @@ export async function checkCastedValue<Message extends command.NormalMessage>(
 ): Promise<discord.MessageEmbed | true> {
   if (!subject.checkCastedValue) return true
 
-  console.log("castedValue:", castedValue)
-
   const checkResult: string | boolean = await core.scrap(
     subject.checkCastedValue,
     castedValue,
@@ -200,7 +192,7 @@ export async function checkCastedValue<Message extends command.NormalMessage>(
   )
 
   const errorEmbed = (errorMessage: string): discord.MessageEmbed => {
-    const embed = new discord.MessageEmbed()
+    const embed = new core.SafeMessageEmbed()
       .setColor("RED")
       .setAuthor(
         `Bad ${subjectType} tested "${subject.name}".`,
@@ -236,7 +228,7 @@ export async function checkCastedValue<Message extends command.NormalMessage>(
 }
 
 export async function castValue<Message extends command.NormalMessage>(
-  subject: Pick<Option<Message>, "castValue" | "name" | "castingErrorMessage">,
+  subject: Pick<Option<any>, "castValue" | "name" | "castingErrorMessage">,
   subjectType: "positional" | "argument",
   baseValue: string | undefined,
   message: Message,
@@ -281,7 +273,6 @@ export async function castValue<Message extends command.NormalMessage>(
         else setValue(baseValue.split(/[,;|]/))
         break
       case "channel":
-      case "channel+":
         if (baseValue) {
           const match = /^(?:<#(\d+)>|(\d+))$/.exec(baseValue)
           if (match) {
@@ -289,34 +280,38 @@ export async function castValue<Message extends command.NormalMessage>(
             const channel = message.client.channels.cache.get(id)
             if (channel) setValue(channel)
             else throw new Error("Unknown channel!")
-          } else if (subject.castValue === "channel+") {
-            const search = (channel: discord.Channel) => {
+          } else {
+            const search = (channel: discord.AnyChannel) => {
               return (
                 "name" in channel && // @ts-ignore
                 channel.name.toLowerCase().includes(baseValue.toLowerCase())
               )
             }
-            let channel: discord.Channel | undefined
+            let channel: discord.AnyChannel | undefined
             if (command.isGuildMessage(message))
               channel = message.guild.channels.cache.find(search)
             channel ??= message.client.channels.cache.find(search)
             if (channel) setValue(channel)
             else throw new Error("Channel not found!")
-          } else throw new Error("Invalid channel value!")
+          }
         } else throw empty
         break
       case "member":
-      case "member+":
         if (baseValue) {
           if (command.isGuildMessage(message)) {
             const match = /^(?:<@!?(\d+)>|(\d+))$/.exec(baseValue)
             if (match) {
               const id = match[1] ?? match[2]
-              const member = message.guild.members.cache.get(id)
+              const member = await message.guild.members.fetch({
+                user: id,
+                force: false,
+                cache: false,
+              })
               if (member) setValue(member)
               else throw new Error("Unknown member!")
-            } else if (subject.castValue === "member+") {
-              const member = message.guild.members.cache.find((member) => {
+            } else {
+              const members = await message.guild.members.fetch()
+              const member = members.find((member) => {
                 return (
                   member.displayName
                     .toLowerCase()
@@ -328,7 +323,7 @@ export async function castValue<Message extends command.NormalMessage>(
               })
               if (member) setValue(member)
               else throw new Error("Member not found!")
-            } else throw new Error("Invalid member value!")
+            }
           } else
             throw new Error(
               'The "GuildMember" casting is only available in a guild!'
@@ -358,7 +353,6 @@ export async function castValue<Message extends command.NormalMessage>(
         } else throw empty
         break
       case "user":
-      case "user+":
         if (baseValue) {
           const match = /^(?:<@!?(\d+)>|(\d+))$/.exec(baseValue)
           if (match) {
@@ -369,7 +363,7 @@ export async function castValue<Message extends command.NormalMessage>(
             })
             if (user) setValue(user)
             else throw new Error("Unknown user!")
-          } else if (subject.castValue === "user+") {
+          } else {
             const user = message.client.users.cache.find((user) => {
               return user.username
                 .toLowerCase()
@@ -377,26 +371,29 @@ export async function castValue<Message extends command.NormalMessage>(
             })
             if (user) setValue(user)
             else throw new Error("User not found!")
-          } else throw new Error("Invalid user value!")
+          }
         } else throw empty
         break
       case "role":
-      case "role+":
         if (baseValue) {
           if (command.isGuildMessage(message)) {
             const match = /^(?:<@&?(\d+)>|(\d+))$/.exec(baseValue)
             if (match) {
               const id = match[1] ?? match[2]
-              const role = message.guild.roles.cache.get(id)
+              const role = await message.guild.roles.fetch(id)
               if (role) setValue(role)
               else throw new Error("Unknown role!")
-            } else if (subject.castValue === "role+") {
-              const role = message.guild.roles.cache.find((role) => {
+            } else {
+              const roles = await message.guild.roles.fetch(undefined, {
+                cache: false,
+                force: false,
+              })
+              const role = roles.find((role) => {
                 return role.name.toLowerCase().includes(baseValue.toLowerCase())
               })
               if (role) setValue(role)
               else throw new Error("Role not found!")
-            } else throw new Error("Invalid role value!")
+            }
           } else
             throw new Error(
               'The "GuildRole" casting is only available in a guild!'
@@ -451,7 +448,7 @@ export async function castValue<Message extends command.NormalMessage>(
 
     if (subject.castingErrorMessage) {
       if (typeof subject.castingErrorMessage === "string") {
-        return new discord.MessageEmbed()
+        return new core.SafeMessageEmbed()
           .setColor("RED")
           .setAuthor(
             `Bad ${subjectType} type "${subject.name}".`,
@@ -465,7 +462,7 @@ export async function castValue<Message extends command.NormalMessage>(
       }
     }
 
-    return new discord.MessageEmbed()
+    return new core.SafeMessageEmbed()
       .setColor("RED")
       .setAuthor(
         `Bad ${subjectType} type "${subject.name}".`,
@@ -481,10 +478,8 @@ export async function castValue<Message extends command.NormalMessage>(
   }
 }
 
-export function getTypeDescriptionOf<Message extends command.NormalMessage>(
-  arg: Option<Message>
-) {
-  if (arg.typeDescription) return arg.typeDescription
+export function getCastingDescriptionOf(arg: Option<any>) {
+  if (arg.castingDescription) return arg.castingDescription
   if (!arg.castValue) return "string"
   if (typeof arg.castValue === "string") {
     if (arg.castValue === "array") return "Array<string>"

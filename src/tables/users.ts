@@ -6,6 +6,7 @@ const table = new app.Table<{
   sourceName: docs.SourceName
 }>({
   name: "users",
+  description: "Represent user current source name",
   setup: (table) => {
     table.string("id", 64).unique()
     table.string("sourceName", 64)

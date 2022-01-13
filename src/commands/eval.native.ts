@@ -1,7 +1,6 @@
-import evaluate from "ghom-eval"
 import cp from "child_process"
-import fs from "fs"
 import util from "util"
+import * as ge from "ghom-eval"
 import * as app from "../app.js"
 
 const exec = util.promisify(cp.exec)
@@ -88,7 +87,7 @@ export default new app.Command({
       )
     )
 
-    const evaluated = await evaluate(
+    const evaluated = await ge.evaluate(
       code,
       { message, app, req },
       "{ message, app, req }"
@@ -99,7 +98,7 @@ export default new app.Command({
         `\\✔ successfully evaluated in ${evaluated.duration}ms`
       )
     } else {
-      const embed = new app.MessageEmbed()
+      const embed = new app.SafeMessageEmbed()
         .setColor(evaluated.failed ? "RED" : "BLURPLE")
         .setTitle(
           `${evaluated.failed ? "\\❌" : "\\✔"} Result of JS evaluation ${

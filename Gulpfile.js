@@ -1,3 +1,4 @@
+import fetch from "axios"
 import gulp from "gulp"
 import esbuild from "gulp-esbuild"
 import filter from "gulp-filter"
@@ -11,8 +12,12 @@ import cp from "child_process"
 import path from "path"
 import fs from "fs"
 
+import { dirname } from "dirname-filename-esm"
+
+const __dirname = dirname(import.meta)
+
 function _gitLog(cb) {
-  const newVersion = git({ cwd: path.join(process.cwd(), "temp") })
+  const newVersion = git({ cwd: path.join(__dirname, "temp") })
 
   log(
     [
@@ -32,6 +37,36 @@ function _cleanDist() {
 
 function _cleanTemp() {
   return del(["temp"], { force: true })
+}
+
+function _checkGulpfile(cb) {
+  fetch(
+    "https://raw.githubusercontent.com/CamilleAbella/bot.ts/master/Gulpfile.js"
+  )
+    .then((res) => res.data)
+    .then(async (remote) => {
+      const local = await fs.promises.readFile(
+        path.join(__dirname, "Gulpfile.js"),
+        "utf8"
+      )
+
+      if (remote !== local) {
+        await fs.promises.writeFile(
+          path.join(__dirname, "Gulpfile.js"),
+          remote,
+          "utf8"
+        )
+
+        log(
+          `${chalk.red("Gulpfile updated!")} Please re-run the ${chalk.cyan(
+            "update"
+          )} command.`
+        )
+
+        process.exit(0)
+      } else cb()
+    })
+    .catch(cb)
 }
 
 function _downloadTemp(cb) {
@@ -79,23 +114,38 @@ function _copyTemp() {
         "temp/src/index.ts",
         "temp/.gitattributes",
         "temp/.gitignore",
-        "temp/Gulpfile.js",
+        "temp/.github/workflows/**/*.native.*",
+        "temp/template.env",
         "temp/tsconfig.json",
+        "temp/tests/**/*.js",
         "!temp/src/app/database.ts",
       ],
       { base: "temp" }
     )
-    .pipe(gulp.dest(process.cwd(), { overwrite: true }))
+    .pipe(gulp.dest(__dirname, { overwrite: true }))
 }
 
 function _updateDependencies(cb) {
-  const packageJSON = JSON.parse(fs.readFileSync("./package.json", "utf8"))
-  const newPackageJSON = JSON.parse(
+  const localPackageJSON = JSON.parse(fs.readFileSync("./package.json", "utf8"))
+  const remotePackageJSON = JSON.parse(
     fs.readFileSync("./temp/package.json", "utf8")
   )
+
+  localPackageJSON.main = remotePackageJSON.main
+
+  localPackageJSON.engines = {
+    ...localPackageJSON.engines,
+    ...remotePackageJSON.engines,
+  }
+
+  localPackageJSON.scripts = {
+    ...localPackageJSON.scripts,
+    ...remotePackageJSON.scripts,
+  }
+
   for (const baseKey of ["dependencies", "devDependencies"]) {
-    const dependencies = packageJSON[baseKey]
-    const newDependencies = newPackageJSON[baseKey]
+    const dependencies = localPackageJSON[baseKey]
+    const newDependencies = remotePackageJSON[baseKey]
     for (const key of Object.keys(newDependencies)) {
       if (/^(?:sqlite3|pg|mysql2)$/.test(key)) continue
       if (
@@ -106,8 +156,8 @@ function _updateDependencies(cb) {
           `Updated  '${chalk.cyan(key)}' [${
             dependencies[key]
               ? `${chalk.blueBright(dependencies[key])} => ${chalk.blueBright(
-                  newDependencies[key]
-                )}`
+                newDependencies[key]
+              )}`
               : chalk.blueBright(newDependencies[key])
           }]`
         )
@@ -120,7 +170,7 @@ function _updateDependencies(cb) {
 
   fs.writeFileSync(
     "./package.json",
-    JSON.stringify(packageJSON, null, 2),
+    JSON.stringify(localPackageJSON, null, 2),
     "utf8"
   )
 
@@ -140,11 +190,18 @@ function _updateDatabaseFile() {
 
 function _removeDuplicates() {
   return gulp
-    .src(["src/**/*.native.ts", "!src/app.native.ts"])
+    .src([
+      "src/**/*.native.ts",
+      "!src/app.native.ts",
+      "temp/.github/workflows/**/*.native.*",
+    ])
     .pipe(
       filter((file) =>
         fs.existsSync(
-          path.join(file.dirname, file.basename.replace("native.ts", "ts"))
+          path.join(
+            file.dirname,
+            file.basename.replace(".native" + file.extname, file.extname)
+          )
         )
       )
     )
@@ -154,6 +211,7 @@ function _removeDuplicates() {
 export const build = gulp.series(_cleanDist, _build)
 export const watch = gulp.series(_cleanDist, _build, _watch)
 export const update = gulp.series(
+  _checkGulpfile,
   _cleanTemp,
   _downloadTemp,
   _copyTemp,

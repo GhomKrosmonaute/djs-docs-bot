@@ -22,12 +22,10 @@ export default new app.Command({
       } else {
         await message.channel.send({
           embeds: [
-            new app.MessageEmbed()
-              .setColor("RED")
-              .setAuthor(
-                `Unknown command "${message.args.command}"`,
-                message.client.user?.displayAvatarURL()
-              ),
+            new app.MessageEmbed().setColor("RED").setAuthor({
+              name: `Unknown command "${message.args.command}"`,
+              iconURL: message.client.user?.displayAvatarURL(),
+            }),
           ],
         })
       }
@@ -46,10 +44,11 @@ export default new app.Command({
         embeds: [
           new app.MessageEmbed()
             .setColor(lib.color)
-            .setAuthor(
-              `Bot invitation link`,
-              message.client.user?.avatarURL({ dynamic: true }) ?? undefined
-            )
+            .setAuthor({
+              name: `Bot invitation link`,
+              iconURL:
+                message.client.user?.avatarURL({ dynamic: true }) ?? undefined,
+            })
             .setDescription(
               `Gateway between the Discord.js docs and Discord.\n` +
                 `Bot in open source, its code is shared in [GitHub](https://github.com/CamilleAbella/djs-docs-bot).\n` +
@@ -62,7 +61,10 @@ export default new app.Command({
         embeds: [
           new app.MessageEmbed()
             .setColor(lib.color)
-            .setAuthor(`How to use documentations ?`, lib.image)
+            .setAuthor({
+              name: `How to use documentations ?`,
+              iconURL: lib.image,
+            })
             .setDescription(
               `**Syntax** : \`${message.usedPrefix}Parent [Child [Child [Child [...]]]]\`\n` +
                 `**Rules** ↓\n` +
@@ -76,7 +78,9 @@ export default new app.Command({
                 `\t${message.usedPrefix}guildmember.user.send.options\n` +
                 `\`\`\``
             )
-            .setFooter(`For all commands: ${message.usedPrefix}help all`),
+            .setFooter({
+              text: `For all commands: ${message.usedPrefix}help all`,
+            }),
         ],
       })
     }
@@ -88,22 +92,24 @@ export default new app.Command({
       channelType: "all",
       description: "Get all commands of bot",
       async run(message) {
-        new app.Paginator({
-          pages: app.Paginator.divider(
-            app.commands.map((cmd) => {
-              return app.commandToListItem(message, cmd)
+        new app.StaticPaginator({
+          pages: app
+            .divider(
+              app.commands.map((cmd) => {
+                return app.commandToListItem(message, cmd)
+              }),
+              10
+            )
+            .map((page) => {
+              return new app.MessageEmbed()
+                .setColor("BLURPLE")
+                .setAuthor({
+                  name: "Command list",
+                  iconURL: message.client.user?.displayAvatarURL(),
+                })
+                .setDescription(page.join("\n"))
+                .setFooter({ text: `${message.usedPrefix}help <command>` })
             }),
-            10
-          ).map((page) => {
-            return new app.MessageEmbed()
-              .setColor("BLURPLE")
-              .setAuthor(
-                "Command list",
-                message.client.user?.displayAvatarURL()
-              )
-              .setDescription(page.join("\n"))
-              .setFooter(`${message.usedPrefix}help <command>`)
-          }),
           channel: message.channel,
           filter: (reaction, user) => user.id === message.author.id,
         })

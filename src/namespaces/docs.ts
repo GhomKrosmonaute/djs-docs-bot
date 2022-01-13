@@ -22,7 +22,7 @@ export const libs: Lib[] = [
     displayName: "Discord JS",
     github: "https://github.com/discordjs/discord.js",
     docs: "https://discord.js.org/#/docs/main/stable/general/welcome",
-    sourceNames: ["stable", "main"],
+    sourceNames: ["discord.js/stable", "discord.js/main"],
   },
   {
     color: "BLURPLE",
@@ -62,7 +62,7 @@ export const libs: Lib[] = [
     displayName: "Discord Collections",
     github: "https://github.com/discordjs/collection",
     docs: "https://discord.js.org/#/docs/collection/master/general/welcome",
-    sourceNames: ["collection"],
+    sourceNames: ["collection/stable", "collection/main"],
   },
 ]
 
@@ -79,7 +79,7 @@ export async function docEmbed(
       embeds: [
         embed
           .setColor("RED")
-          .setAuthor("404: Element not found", lib.image)
+          .setAuthor({ name: "404: Element not found", iconURL: lib.image })
           .setDescription("Maybe try an other path"),
       ],
     }
@@ -203,20 +203,27 @@ export async function docEmbed(
   }
 
   if ("meta" in e && e.meta)
-    embed.setFooter(`${e.meta.path}/${e.meta.file} - line: ${e.meta.line}`)
+    embed.setFooter({
+      text: `${e.meta.path}/${e.meta.file} - line: ${e.meta.line}`,
+    })
 
   if ("deprecated" in e && e.deprecated) {
     embed.setColor("#FFACAC")
-    embed.setFooter(
-      "This element is deprecated!",
-      "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/deprecated.png"
-    )
+    embed.setFooter({
+      text: "This element is deprecated!",
+      iconURL:
+        "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/deprecated.png",
+    })
   }
 
   return {
     embeds: [
       embed
-        .setAuthor(authorName, lib.image, url ?? undefined)
+        .setAuthor({
+          name: authorName,
+          iconURL: lib.image,
+          url: url ?? undefined,
+        })
         .setDescription(description),
     ],
   }
@@ -234,7 +241,7 @@ export async function getUserSourceName(
     .where("id", user.id)
     .first()
 
-  return data?.sourceName ?? "stable"
+  return data?.sourceName ?? "discord.js/stable"
 }
 
 export function paramsToString(params?: docs.Param[]): string {

@@ -168,7 +168,7 @@ export function forceTextSize(
 
 export interface EventEmitters {
   message:
-    | discord.TextBasedChannels
+    | discord.TextBasedChannel
     | discord.User
     | discord.GuildMember
     | discord.Guild
@@ -221,3 +221,121 @@ export const emojiRegex =
 
 export const fetchPackageJson = () =>
   JSON.parse(fs.readFileSync(rootPath("package.json"), "utf-8"))
+
+export const embedLimits = {
+  title: 256,
+  description: 4096,
+  fields: 25,
+  "field.name": 256,
+  "field.value": 1024,
+  "footer.text": 2048,
+  "author.name": 256,
+}
+
+export const spaceChar = "\u200b"
+
+export function formatEmbedText(
+  input: string,
+  limit: keyof typeof embedLimits
+): string {
+  return (input ?? "").slice(0, embedLimits[limit]) || spaceChar
+}
+
+export class SafeMessageEmbed extends discord.MessageEmbed {
+  setDescription(description: string): any {
+    super.setDescription(formatEmbedText(description, "description"))
+
+    return this
+  }
+
+  public setFooter(options: discord.EmbedFooterData | null): this
+  /** @deprecated Supply a lone object of interface {@link EmbedFooterData} instead. */
+  public setFooter(text: string, iconURL?: string): this
+  public setFooter(
+    text: string | discord.EmbedFooterData | null,
+    iconURL?: string
+  ): this {
+    let options: discord.EmbedFooterData | null
+
+    if (typeof text === "string")
+      options = {
+        text,
+        iconURL,
+      }
+    else options = text
+
+    if (options?.text)
+      options.text = formatEmbedText(options.text, "footer.text")
+
+    super.setFooter(options)
+
+    return this
+  }
+
+  setColor(color: discord.ColorResolvable = "BLURPLE"): any {
+    super.setColor(color)
+
+    return this
+  }
+
+  setTitle(title: string): this {
+    super.setTitle(formatEmbedText(title, "title"))
+
+    return this
+  }
+
+  public setAuthor(options: discord.EmbedAuthorData | null): this
+  /** @deprecated Supply a lone object of interface {@link EmbedAuthorData} instead. */
+  public setAuthor(name: string, iconURL?: string, url?: string): this
+  public setAuthor(
+    name: string | discord.EmbedAuthorData | null,
+    iconURL?: string,
+    url?: string
+  ): this {
+    let options: discord.EmbedAuthorData | null
+
+    if (typeof name === "string")
+      options = {
+        name,
+        iconURL,
+        url,
+      }
+    else options = name
+
+    if (options?.name)
+      options.name = formatEmbedText(options.name, "author.name")
+
+    super.setAuthor(options)
+
+    return this
+  }
+
+  setFields(...fields: discord.EmbedFieldData[]): any {
+    super.setFields([])
+    this.addFields(...fields)
+
+    return this
+  }
+
+  addFields(...fields: discord.EmbedFieldData[]): any {
+    fields.slice(0, embedLimits.fields - this.fields.length).map((field) =>
+      super.addFields({
+        name: field.name,
+        value: field.value,
+        inline: field.inline,
+      })
+    )
+
+    return this
+  }
+
+  addField(name: string, value: string, inline?: boolean): any {
+    super.addField(
+      formatEmbedText(name, "field.name"),
+      formatEmbedText(value, "field.value"),
+      inline
+    )
+
+    return this
+  }
+}

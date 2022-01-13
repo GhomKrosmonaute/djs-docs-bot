@@ -65,7 +65,10 @@ export default new app.Command({
           embeds: [
             new app.MessageEmbed()
               .setColor(lib.color)
-              .setAuthor(`New default version setup`, lib.image)
+              .setAuthor({
+                name: `New default version setup`,
+                iconURL: lib.image,
+              })
               .setDescription(`Your new default version is \`${lib.name}\``),
           ],
         })
