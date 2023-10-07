@@ -1,6 +1,6 @@
 import * as app from "../app.js"
 
-import tims from "tims"
+import time from "tims"
 import * as core from "../app/core.js"
 
 const conf = app.fetchPackageJson()
@@ -31,10 +31,10 @@ export default new app.Command({
           lang: "yml",
           content: [
             `author: ${
-              message.client.users.cache.get(process.env.BOT_OWNER as string)
+              message.client.users.cache.get(await app.getBotOwnerId(message))
                 ?.tag
             }`,
-            `uptime: ${tims.duration(app.uptime(), {
+            `uptime: ${time.duration(app.uptime(), {
               format: "second",
               maxPartCount: 2,
             })}`,

@@ -7,7 +7,7 @@ import yargsParser from "yargs-parser"
 
 import * as core from "./core.js"
 import * as logger from "./logger.js"
-import * as handler from "./handler.js"
+import * as handler from "@ghom/handler"
 import * as argument from "./argument.js"
 
 import { filename } from "dirname-filename-esm"
@@ -15,7 +15,7 @@ import { filename } from "dirname-filename-esm"
 const __filename = filename(import.meta)
 
 export const commandHandler = new handler.Handler(
-  process.env.BOT_COMMANDS_PATH ?? path.join(process.cwd(), "dist", "commands")
+  path.join(process.cwd(), "dist", "commands")
 )
 
 commandHandler.on("load", async (filepath) => {
@@ -50,6 +50,7 @@ export const commands = new (class CommandCollection extends discord.Collection<
 export type SentItem = string | discord.MessagePayload | discord.MessageOptions
 
 export type NormalMessage = discord.Message & {
+  customData: any
   args: { [name: string]: any } & any[]
   triggerCoolDown: () => void
   send: (this: NormalMessage, item: SentItem) => Promise<discord.Message>
@@ -62,7 +63,7 @@ export type NormalMessage = discord.Message & {
   isFromBotOwner: boolean
   isFromGuildOwner: boolean
   usedPrefix: string
-  client: core.FullClient
+  client: discord.Client<true>
   rest: string
 }
 
@@ -81,20 +82,34 @@ export interface CoolDown {
   trigger: boolean
 }
 
-export interface MiddlewareResult {
-  result: boolean | string
-  data: any
-}
+export class Middleware<Type extends keyof CommandMessageType> {
+  public cache: any = {}
 
-export type Middleware<Type extends keyof CommandMessageType> = (
-  message: CommandMessageType[Type],
-  data: any
-) => Promise<MiddlewareResult> | MiddlewareResult
+  constructor(
+    public name: string,
+    public onRun: (
+      this: Middleware<Type>,
+      message: CommandMessageType[Type]
+    ) => Promise<unknown> | unknown
+  ) {}
+
+  public run(message: CommandMessageType[Type]) {
+    this.onRun.bind(this)(message)
+  }
+}
 
 export interface CommandMessageType {
   guild: GuildMessage
   dm: DirectMessage
   all: NormalMessage
+}
+
+export interface CommandTest {
+  name: string
+  run: (
+    tester: discord.Client<true>,
+    tested: discord.Client<true>
+  ) => Promise<void | string>
 }
 
 export interface CommandOptions<Type extends keyof CommandMessageType> {
@@ -171,9 +186,9 @@ export interface CommandOptions<Type extends keyof CommandMessageType> {
   /**
    * Sub-commands
    */
-  subs?: (Command<"guild"> | Command<"dm"> | Command<"all">)[]
+  subs?: (Command<"guild"> | Command<"dm"> | Command)[]
   /**
-   * This slash command options are automatically setup on bot running but you can configure it manually too.
+   * This slash command options are automatically setup on bot running, but you can configure it manually too.
    */
   slash?: API.RESTPostAPIApplicationCommandsJSONBody
   /**
@@ -186,6 +201,7 @@ export interface CommandOptions<Type extends keyof CommandMessageType> {
    * @deprecated
    */
   native?: boolean
+  tests?: CommandTest[]
 }
 
 export class Command<Type extends keyof CommandMessageType = "all"> {
@@ -281,6 +297,8 @@ export async function prepareCommand<Type extends keyof CommandMessageType>(
     key: string
   }
 ): Promise<discord.MessageEmbed | boolean> {
+  const botOwnerId = await core.getBotOwnerId(message)
+
   // coolDown
   if (cmd.options.coolDown) {
     const slug = core.slug("coolDown", cmd.options.name, message.channel.id)
@@ -305,20 +323,18 @@ export async function prepareCommand<Type extends keyof CommandMessageType>(
           trigger: false,
         })
       } else {
-        return new core.SafeMessageEmbed()
-          .setColor("RED")
-          .setAuthor(
-            `Please wait ${Math.ceil(
-              (coolDown.time + coolDownTime - Date.now()) / 1000
-            )} seconds...`,
-            message.client.user.displayAvatarURL()
-          )
+        return new core.SafeMessageEmbed().setColor("RED").setAuthor({
+          name: `Please wait ${Math.ceil(
+            (coolDown.time + coolDownTime - Date.now()) / 1000
+          )} seconds...`,
+          iconURL: message.client.user.displayAvatarURL(),
+        })
       }
     }
   } else {
     message.triggerCoolDown = () => {
       logger.warn(
-        `You must setup the cooldown of the "${cmd.options.name}" command before using the "triggerCoolDown" method`,
+        `You must setup the coolDown of the "${cmd.options.name}" command before using the "triggerCoolDown" method`,
         "command:prepareCommand"
       )
     }
@@ -328,24 +344,20 @@ export async function prepareCommand<Type extends keyof CommandMessageType>(
 
   if (isGuildMessage(message)) {
     if (channelType === "dm")
-      return new core.SafeMessageEmbed()
-        .setColor("RED")
-        .setAuthor(
-          "This command must be used in DM.",
-          message.client.user.displayAvatarURL()
-        )
+      return new core.SafeMessageEmbed().setColor("RED").setAuthor({
+        name: "This command must be used in DM.",
+        iconURL: message.client.user.displayAvatarURL(),
+      })
 
     if (core.scrap(cmd.options.guildOwnerOnly, message))
       if (
         message.guild.ownerId !== message.member.id &&
-        process.env.BOT_OWNER !== message.member.id
+        botOwnerId !== message.member.id
       )
-        return new core.SafeMessageEmbed()
-          .setColor("RED")
-          .setAuthor(
-            "You must be the guild owner.",
-            message.client.user.displayAvatarURL()
-          )
+        return new core.SafeMessageEmbed().setColor("RED").setAuthor({
+          name: "You must be the guild owner.",
+          iconURL: message.client.user.displayAvatarURL(),
+        })
 
     if (cmd.options.botPermissions) {
       const botPermissions = await core.scrap(
@@ -357,7 +369,10 @@ export async function prepareCommand<Type extends keyof CommandMessageType>(
         if (!message.guild.me?.permissions.has(permission, true))
           return new core.SafeMessageEmbed()
             .setColor("RED")
-            .setAuthor("Oops!", message.client.user.displayAvatarURL())
+            .setAuthor({
+              name: "Oops!",
+              iconURL: message.client.user.displayAvatarURL(),
+            })
             .setDescription(
               `I need the \`${permission}\` permission to call this command.`
             )
@@ -373,7 +388,10 @@ export async function prepareCommand<Type extends keyof CommandMessageType>(
         if (!message.member.permissions.has(permission, true))
           return new core.SafeMessageEmbed()
             .setColor("RED")
-            .setAuthor("Oops!", message.client.user.displayAvatarURL())
+            .setAuthor({
+              name: "Oops!",
+              iconURL: message.client.user.displayAvatarURL(),
+            })
             .setDescription(
               `You need the \`${permission}\` permission to call this command.`
             )
@@ -399,7 +417,10 @@ export async function prepareCommand<Type extends keyof CommandMessageType>(
           if (!member.roles.cache.has(id)) {
             return new core.SafeMessageEmbed()
               .setColor("RED")
-              .setAuthor("Oops!", message.client.user.displayAvatarURL())
+              .setAuthor({
+                name: "Oops!",
+                iconURL: message.client.user.displayAvatarURL(),
+              })
               .setDescription(
                 `You must have the <@${id}> role to call this command.`
               )
@@ -413,7 +434,10 @@ export async function prepareCommand<Type extends keyof CommandMessageType>(
               if (member.roles.cache.has(id)) {
                 return new core.SafeMessageEmbed()
                   .setColor("RED")
-                  .setAuthor("Oops!", message.client.user.displayAvatarURL())
+                  .setAuthor({
+                    name: "Oops!",
+                    iconURL: message.client.user.displayAvatarURL(),
+                  })
                   .setDescription(
                     `You mustn't have the <@${id}> role to call this command.`
                   )
@@ -423,7 +447,10 @@ export async function prepareCommand<Type extends keyof CommandMessageType>(
                 if (member.roles.cache.has(getRoleId(role))) {
                   return new core.SafeMessageEmbed()
                     .setColor("RED")
-                    .setAuthor("Oops!", message.client.user.displayAvatarURL())
+                    .setAuthor({
+                      name: "Oops!",
+                      iconURL: message.client.user.displayAvatarURL(),
+                    })
                     .setDescription(
                       `You mustn't have the <@${getRoleId(
                         role
@@ -456,7 +483,10 @@ export async function prepareCommand<Type extends keyof CommandMessageType>(
             if (!someRoleGiven)
               return new core.SafeMessageEmbed()
                 .setColor("RED")
-                .setAuthor("Oops!", message.client.user.displayAvatarURL())
+                .setAuthor({
+                  name: "Oops!",
+                  iconURL: message.client.user.displayAvatarURL(),
+                })
                 .setDescription(
                   `You must have at least one of the following roles to call this command.\n${[
                     ...roleCond,
@@ -476,21 +506,17 @@ export async function prepareCommand<Type extends keyof CommandMessageType>(
 
   if (channelType === "guild")
     if (isDirectMessage(message))
-      return new core.SafeMessageEmbed()
-        .setColor("RED")
-        .setAuthor(
-          "This command must be used in a guild.",
-          message.client.user.displayAvatarURL()
-        )
+      return new core.SafeMessageEmbed().setColor("RED").setAuthor({
+        name: "This command must be used in a guild.",
+        iconURL: message.client.user.displayAvatarURL(),
+      })
 
   if (await core.scrap(cmd.options.botOwnerOnly, message))
-    if (process.env.BOT_OWNER !== message.author.id)
-      return new core.SafeMessageEmbed()
-        .setColor("RED")
-        .setAuthor(
-          "You must be my owner.",
-          message.client.user.displayAvatarURL()
-        )
+    if (botOwnerId !== message.author.id)
+      return new core.SafeMessageEmbed().setColor("RED").setAuthor({
+        name: "You must be my owner.",
+        iconURL: message.client.user.displayAvatarURL(),
+      })
 
   if (context) {
     if (cmd.options.positional) {
@@ -517,10 +543,10 @@ export async function prepareCommand<Type extends keyof CommandMessageType>(
               if (typeof positional.missingErrorMessage === "string") {
                 return new core.SafeMessageEmbed()
                   .setColor("RED")
-                  .setAuthor(
-                    `Missing positional "${positional.name}"`,
-                    message.client.user.displayAvatarURL()
-                  )
+                  .setAuthor({
+                    name: `Missing positional "${positional.name}"`,
+                    iconURL: message.client.user.displayAvatarURL(),
+                  })
                   .setDescription(positional.missingErrorMessage)
               } else {
                 return positional.missingErrorMessage
@@ -529,10 +555,10 @@ export async function prepareCommand<Type extends keyof CommandMessageType>(
 
             return new core.SafeMessageEmbed()
               .setColor("RED")
-              .setAuthor(
-                `Missing positional "${positional.name}"`,
-                message.client.user.displayAvatarURL()
-              )
+              .setAuthor({
+                name: `Missing positional "${positional.name}"`,
+                iconURL: message.client.user.displayAvatarURL(),
+              })
               .setDescription(
                 positional.description
                   ? "Description: " + positional.description
@@ -606,10 +632,10 @@ export async function prepareCommand<Type extends keyof CommandMessageType>(
             if (typeof option.missingErrorMessage === "string") {
               return new core.SafeMessageEmbed()
                 .setColor("RED")
-                .setAuthor(
-                  `Missing option "${option.name}"`,
-                  message.client.user.displayAvatarURL()
-                )
+                .setAuthor({
+                  name: `Missing option "${option.name}"`,
+                  iconURL: message.client.user.displayAvatarURL(),
+                })
                 .setDescription(option.missingErrorMessage)
             } else {
               return option.missingErrorMessage
@@ -618,10 +644,10 @@ export async function prepareCommand<Type extends keyof CommandMessageType>(
 
           return new core.SafeMessageEmbed()
             .setColor("RED")
-            .setAuthor(
-              `Missing option "${option.name}"`,
-              message.client.user.displayAvatarURL()
-            )
+            .setAuthor({
+              name: `Missing option "${option.name}"`,
+              iconURL: message.client.user.displayAvatarURL(),
+            })
             .setDescription(
               option.description
                 ? "Description: " + option.description
@@ -709,10 +735,10 @@ export async function prepareCommand<Type extends keyof CommandMessageType>(
             if (typeof rest.missingErrorMessage === "string") {
               return new core.SafeMessageEmbed()
                 .setColor("RED")
-                .setAuthor(
-                  `Missing rest "${rest.name}"`,
-                  message.client.user.displayAvatarURL()
-                )
+                .setAuthor({
+                  name: `Missing rest "${rest.name}"`,
+                  iconURL: message.client.user.displayAvatarURL(),
+                })
                 .setDescription(rest.missingErrorMessage)
             } else {
               return rest.missingErrorMessage
@@ -721,10 +747,10 @@ export async function prepareCommand<Type extends keyof CommandMessageType>(
 
           return new core.SafeMessageEmbed()
             .setColor("RED")
-            .setAuthor(
-              `Missing rest "${rest.name}"`,
-              message.client.user.displayAvatarURL()
-            )
+            .setAuthor({
+              name: `Missing rest "${rest.name}"`,
+              iconURL: message.client.user.displayAvatarURL(),
+            })
             .setDescription(
               rest.description ??
                 "Please use `--help` flag for more information."
@@ -741,28 +767,25 @@ export async function prepareCommand<Type extends keyof CommandMessageType>(
   if (cmd.options.middlewares) {
     const middlewares = await core.scrap(cmd.options.middlewares, message)
 
-    let currentData: any = {}
-
     for (const middleware of middlewares) {
-      const { result, data } = await middleware(message, currentData)
-
-      currentData = {
-        ...currentData,
-        ...(data ?? {}),
-      }
-
-      if (typeof result === "string")
+      try {
+        await middleware.run(message)
+      } catch (error) {
         return new core.SafeMessageEmbed()
           .setColor("RED")
-          .setAuthor(
-            `${
+          .setAuthor({
+            name: `${
               middleware.name ? `"${middleware.name}" m` : "M"
             }iddleware error`,
-            message.client.user.displayAvatarURL()
+            iconURL: message.client.user.displayAvatarURL(),
+          })
+          .setDescription(
+            core.code.stringify({
+              lang: "js",
+              content: String(error),
+            })
           )
-          .setDescription(result)
-
-      if (!result) return false
+      }
     }
   }
 
@@ -773,28 +796,24 @@ export async function sendCommandDetails<Type extends keyof CommandMessageType>(
   message: CommandMessageType[Type],
   cmd: Command<Type>
 ): Promise<void> {
-  let pattern = `${message.usedPrefix}${
-    cmd.options.isDefault
-      ? `[${commandBreadcrumb(cmd)}]`
-      : commandBreadcrumb(cmd)
-  }`
+  const embed = new core.SafeMessageEmbed()
+    .setColor()
+    .setAuthor({
+      name: "Command details",
+      iconURL: message.client.user.displayAvatarURL(),
+    })
+    .setDescription(
+      (await core.scrap(cmd.options.longDescription, message)) ??
+        cmd.options.description ??
+        "no description"
+    )
 
-  const positionalList: string[] = []
-  const argumentList: string[] = []
-  const flagList: string[] = []
-  let restPattern = ""
-
-  if (cmd.options.rest) {
-    const rest = await core.scrap(cmd.options.rest, message)
-    const dft =
-      rest.default !== undefined
-        ? `="${await core.scrap(rest.default, message)}"`
-        : ""
-
-    restPattern = (await core.scrap(rest.required, message))
-      ? `<...${rest.name}>`
-      : `[...${rest.name}${dft}]`
-  }
+  const title = [
+    message.usedPrefix +
+      (cmd.options.isDefault
+        ? `[${commandBreadcrumb(cmd)}]`
+        : commandBreadcrumb(cmd)),
+  ]
 
   if (cmd.options.positional) {
     const cmdPositional = await core.scrap(cmd.options.positional, message)
@@ -804,7 +823,8 @@ export async function sendCommandDetails<Type extends keyof CommandMessageType>(
         positional.default !== undefined
           ? `="${await core.scrap(positional.default, message)}"`
           : ""
-      positionalList.push(
+
+      title.push(
         (await core.scrap(positional.required, message)) && !dft
           ? `<${positional.name}>`
           : `[${positional.name}${dft}]`
@@ -812,7 +832,30 @@ export async function sendCommandDetails<Type extends keyof CommandMessageType>(
     }
   }
 
+  if (cmd.options.rest) {
+    const rest = await core.scrap(cmd.options.rest, message)
+    const dft =
+      rest.default !== undefined
+        ? `="${await core.scrap(rest.default, message)}"`
+        : ""
+
+    title.push(
+      (await core.scrap(rest.required, message))
+        ? `<...${rest.name}>`
+        : `[...${rest.name}${dft}]`
+    )
+  }
+
+  if (cmd.options.flags) {
+    for (const flag of cmd.options.flags) {
+      title.push(`[--${flag.name}]`)
+    }
+  }
+
   if (cmd.options.options) {
+    title.push("[OPTIONS]")
+
+    const options: string[] = []
     const cmdOptions = await core.scrap(cmd.options.options, message)
 
     for (const arg of cmdOptions) {
@@ -820,7 +863,8 @@ export async function sendCommandDetails<Type extends keyof CommandMessageType>(
         arg.default !== undefined
           ? `="${core.scrap(arg.default, message)}"`
           : ""
-      argumentList.push(
+
+      options.push(
         (await core.scrap(arg.required, message))
           ? `\`--${arg.name}${dft}\` (\`${argument.getCastingDescriptionOf(
               arg
@@ -830,13 +874,11 @@ export async function sendCommandDetails<Type extends keyof CommandMessageType>(
             )}\`) ${arg.description ?? ""}`
       )
     }
+
+    embed.addField("options", options.join("\n"), false)
   }
 
-  if (cmd.options.flags) {
-    for (const flag of cmd.options.flags) {
-      flagList.push(`[--${flag.name}]`)
-    }
-  }
+  embed.setTitle(title.join(" "))
 
   const specialPermissions = []
 
@@ -844,23 +886,6 @@ export async function sendCommandDetails<Type extends keyof CommandMessageType>(
     specialPermissions.push("BOT_OWNER")
   if (await core.scrap(cmd.options.guildOwnerOnly, message))
     specialPermissions.push("GUILD_OWNER")
-
-  const embed = new core.SafeMessageEmbed()
-    .setColor()
-    .setAuthor("Command details", message.client.user.displayAvatarURL())
-    .setTitle(
-      `${pattern} ${[...positionalList, restPattern, ...flagList].join(" ")} ${
-        cmd.options ? "[OPTIONS]" : ""
-      }`
-    )
-    .setDescription(
-      (await core.scrap(cmd.options.longDescription, message)) ??
-        cmd.options.description ??
-        "no description"
-    )
-
-  if (argumentList.length > 0)
-    embed.addField("options", argumentList.join("\n"), false)
 
   if (cmd.options.aliases) {
     const aliases = cmd.options.aliases
@@ -937,14 +962,15 @@ export async function sendCommandDetails<Type extends keyof CommandMessageType>(
         )
       )
         .filter((line) => line.length > 0)
-        .join("\n") || "Sub commands are not accessible by you.",
+        .join("\n")
+        .trim() || "Sub commands are not accessible by you.",
       false
     )
 
   if (cmd.options.channelType !== "all")
-    embed.setFooter(
-      `This command can only be sent in ${cmd.options.channelType} channel.`
-    )
+    embed.setFooter({
+      text: `This command can only be sent in ${cmd.options.channelType} channel.`,
+    })
 
   await message.channel.send({ embeds: [embed] })
 }

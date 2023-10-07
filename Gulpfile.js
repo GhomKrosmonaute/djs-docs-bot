@@ -41,7 +41,7 @@ function _cleanTemp() {
 
 function _checkGulpfile(cb) {
   fetch(
-    "https://raw.githubusercontent.com/CamilleAbella/bot.ts/master/Gulpfile.js"
+    "https://raw.githubusercontent.com/bot-ts/framework/master/Gulpfile.js"
   )
     .then((res) => res.data)
     .then(async (remote) => {
@@ -70,7 +70,7 @@ function _checkGulpfile(cb) {
 }
 
 function _downloadTemp(cb) {
-  cp.exec("git clone https://github.com/CamilleAbella/bot.ts.git temp", cb)
+  cp.exec("git clone https://github.com/bot-ts/framework.git temp", cb)
 }
 
 function _build() {
@@ -93,11 +93,11 @@ function _watch(cb) {
   const spawn = cp.spawn("nodemon dist/index --delay 1", { shell: true })
 
   spawn.stdout.on("data", (data) => {
-    console.log(chalk.white(`${data}`.trim()))
+    console.log(`${data}`.trim())
   })
 
   spawn.stderr.on("data", (data) => {
-    console.error(chalk.red(`${data}`.trim()))
+    console.error(`${data}`.trim())
   })
 
   spawn.on("close", () => cb())

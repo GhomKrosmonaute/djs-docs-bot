@@ -7,7 +7,11 @@ export default new app.Command({
   description: "Search object in documentation",
   channelType: "all",
   isDefault: true,
-  middlewares: [({ author }, data) => ({ result: !author.bot, data })],
+  middlewares: [
+    new app.Middleware("bot only", ({ author }) => {
+      if (author.bot) app.die("Can only be used by a human.")
+    }),
+  ],
   rest: {
     name: "path",
     description: "The documentation path",
