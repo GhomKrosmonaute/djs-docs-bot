@@ -29,7 +29,7 @@ export default new app.Command({
                     .map((lib) =>
                       lib.sourceNames.map((name) => `\n  ${name}`).join("")
                     )
-                    .join("\n\n"),
+                    .join(""),
                 })
               ),
           ],
