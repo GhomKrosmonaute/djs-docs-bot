@@ -9,7 +9,20 @@ export default new app.Command({
   channelType: "all",
   description: "Manage discord.js versions",
   async run(message) {
-    return app.sendCommandDetails(message, this)
+    const currentSourceName = await app.getUserSourceName(message.author)
+    const lib = app.getLib(currentSourceName)
+
+    return message.channel.send({
+      embeds: [
+        new app.MessageEmbed()
+          .setTitle("Your current version: " + currentSourceName)
+          .setColor(lib.color)
+          .setThumbnail(lib.image)
+          .setDescription(
+            `- [Docs](${lib.docs})\n- [Github](${lib.github})\n- [NPM](https://www.npmjs.com/package/${lib.name})`
+          ),
+      ],
+    })
   },
   subs: [
     new app.Command({
@@ -17,6 +30,8 @@ export default new app.Command({
       description: "List versions",
       channelType: "all",
       async run(message) {
+        const currentSourceName = await app.getUserSourceName(message.author)
+
         return message.channel.send({
           embeds: [
             new app.MessageEmbed()
@@ -27,7 +42,14 @@ export default new app.Command({
                   lang: "yml",
                   content: app.libs
                     .map((lib) =>
-                      lib.sourceNames.map((name) => `\n  ${name}`).join("")
+                      lib.sourceNames
+                        .map(
+                          (name) =>
+                            `\n${
+                              currentSourceName === name ? "*" : " "
+                            } ${name}`
+                        )
+                        .join("")
                     )
                     .join(""),
                 })
@@ -43,7 +65,7 @@ export default new app.Command({
       positional: [
         {
           name: "sourceName",
-          description: "Your new default version",
+          description: "Your new current version",
           checkValue: (value) => docs.sources.hasOwnProperty(value),
           required: true,
         },
@@ -67,7 +89,7 @@ export default new app.Command({
                 name: `New default version setup`,
                 iconURL: lib.image,
               })
-              .setDescription(`Your new default version is \`${lib.name}\``),
+              .setDescription(`Your new current version is \`${lib.name}\``),
           ],
         })
       },
