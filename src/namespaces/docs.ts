@@ -5,7 +5,6 @@ import users from "../tables/users.js"
 
 export interface Lib {
   name: string
-  displayName: string
   color: discord.ColorResolvable
   image: string
   github: string
@@ -19,17 +18,15 @@ export const libs: Lib[] = [
     name: "discord.js",
     image:
       "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/discord.js.png",
-    displayName: "Discord JS",
     github: "https://github.com/discordjs/discord.js",
     docs: "https://discord.js.org/#/docs/main/stable/general/welcome",
-    sourceNames: ["discord.js/stable", "discord.js/main"],
+    sourceNames: ["discord.js/stable", "discord.js/main", "v11", "v12", "v13"],
   },
   {
     color: "BLURPLE",
     name: "discord.js-commando",
     image:
       "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/discord.js.png",
-    displayName: "Discord JS Commando",
     github: "https://github.com/discordjs/Commando",
     docs: "https://discord.js.org/#/docs/commando/master/general/welcome",
     sourceNames: ["commando"],
@@ -39,17 +36,71 @@ export const libs: Lib[] = [
     name: "discord-rpc",
     image:
       "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/discord.js.png",
-    displayName: "Discord RPC",
     github: "https://github.com/discordjs/RPC",
     docs: "https://discord.js.org/#/docs/rpc/master/general/welcome",
     sourceNames: ["rpc"],
+  },
+  {
+    color: "BLURPLE",
+    name: "@discordjs/rest",
+    image:
+      "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/discord.js.png",
+    github: "https://github.com/discordjs/discord.js/tree/main/packages/rest",
+    docs: "https://old.discordjs.dev/#/docs/rest/main/general/welcome",
+    sourceNames: ["rest"],
+  },
+  {
+    color: "BLURPLE",
+    name: "@discordjs/voice",
+    image:
+      "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/discord.js.png",
+    github: "https://github.com/discordjs/discord.js/tree/main/packages/voice",
+    docs: "https://old.discordjs.dev/#/docs/voice/main/general/welcome",
+    sourceNames: ["voice"],
+  },
+  {
+    color: "BLURPLE",
+    name: "@discordjs/util",
+    image:
+      "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/discord.js.png",
+    github: "https://github.com/discordjs/discord.js/tree/main/packages/util",
+    docs: "https://discord.js.org/docs/packages/util/1.0.1",
+    sourceNames: ["util"],
+  },
+  {
+    color: "BLURPLE",
+    name: "@discordjs/ws",
+    image:
+      "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/discord.js.png",
+    github: "https://github.com/discordjs/discord.js/tree/main/packages/ws",
+    docs: "https://discord.js.org/docs/packages/ws/1.0.1",
+    sourceNames: ["ws"],
+  },
+  {
+    color: "BLURPLE",
+    name: "@discordjs/builders",
+    image:
+      "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/discord.js.png",
+    github:
+      "https://github.com/discordjs/discord.js/tree/main/packages/builders",
+    docs: "https://old.discordjs.dev/#/docs/builders/main/general/welcome",
+    sourceNames: ["builders/stable", "builders/main"],
+  },
+  {
+    color: "BLURPLE",
+    name: "@discordjs/brokers",
+    image:
+      "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/discord.js.png",
+    github:
+      "https://github.com/discordjs/discord.js/tree/main/packages/brokers",
+    docs: "https://discord.js.org/docs/packages/brokers/0.2.2",
+    sourceNames: ["brokers"],
   },
   {
     color: "#87202F",
     name: "discord-akairo",
     image:
       "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/discord-akairo.png",
-    displayName: "Discord Akairo",
     github: "https://github.com/discord-akairo/discord-akairo",
     docs: "https://discord-akairo.github.io/#/docs/main/master/class/AkairoClient",
     sourceNames: ["akairo"],
@@ -59,7 +110,6 @@ export const libs: Lib[] = [
     name: "@discordjs/collection",
     image:
       "https://raw.githubusercontent.com/CamilleAbella/djs-docs-bot/master/assets/discord.js.png",
-    displayName: "Discord Collections",
     github: "https://github.com/discordjs/collection",
     docs: "https://discord.js.org/#/docs/collection/master/general/welcome",
     sourceNames: ["collection/stable", "collection/main"],

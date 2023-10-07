@@ -26,11 +26,9 @@ export default new app.Command({
                 app.code.stringify({
                   lang: "yml",
                   content: app.libs
-                    .map((lib) => {
-                      return `${lib.displayName}:\n  ${lib.sourceNames.join(
-                        "\n  "
-                      )}`
-                    })
+                    .map((lib) =>
+                      lib.sourceNames.map((name) => `\n  ${name}`).join("")
+                    )
                     .join("\n\n"),
                 })
               ),
